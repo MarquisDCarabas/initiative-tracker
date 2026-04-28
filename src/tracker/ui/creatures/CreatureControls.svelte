@@ -13,6 +13,10 @@
     import { createEventDispatcher, getContext } from "svelte";
     import type InitiativeTracker from "src/main";
     import { tracker } from "src/tracker/stores/tracker";
+    import {
+        AmountModal,
+        ConditionPickModal
+    } from "src/tracker/ui/modals";
 
     const dispatch = createEventDispatcher();
 
@@ -27,6 +31,90 @@
         hamburger.extraSettingsEl.onclick = (evt) => {
             evt.stopPropagation();
             const menu = new Menu();
+            const isActing = creature.active || creature.outOfTurnActor;
+            menu.addItem((item) => {
+                item.setIcon("swords")
+                    .setTitle(
+                        isActing ? "Clear attacker" : "Set as attacker"
+                    )
+                    .onClick(() => {
+                        if (isActing) {
+                            tracker.clearAttacker();
+                        } else {
+                            tracker.setAttacker(creature);
+                        }
+                    });
+            });
+            menu.addItem((item) => {
+                item.setIcon("crosshair")
+                    .setTitle(
+                        creature.target ? "Clear target" : "Set as target"
+                    )
+                    .onClick(() => {
+                        if (creature.target) {
+                            tracker.clearTarget();
+                        } else {
+                            tracker.setTarget(creature);
+                        }
+                    });
+            });
+            menu.addItem((item) => {
+                item.setIcon("flame")
+                    .setTitle("Damage…")
+                    .onClick(() => {
+                        new AmountModal(
+                            plugin.app,
+                            `Damage ${creature.getName()}`,
+                            (amount) => {
+                                if (amount != null) {
+                                    tracker.applyDamageOrHeal(
+                                        creature,
+                                        amount,
+                                        "damage"
+                                    );
+                                }
+                            }
+                        ).open();
+                    });
+            });
+            menu.addItem((item) => {
+                item.setIcon("plus-square")
+                    .setTitle("Heal…")
+                    .onClick(() => {
+                        new AmountModal(
+                            plugin.app,
+                            `Heal ${creature.getName()}`,
+                            (amount) => {
+                                if (amount != null) {
+                                    tracker.applyDamageOrHeal(
+                                        creature,
+                                        amount,
+                                        "heal"
+                                    );
+                                }
+                            }
+                        ).open();
+                    });
+            });
+            menu.addItem((item) => {
+                item.setIcon("activity")
+                    .setTitle("Apply condition…")
+                    .onClick(() => {
+                        new ConditionPickModal(
+                            plugin.app,
+                            plugin.data.statuses,
+                            (condition) => {
+                                if (condition) {
+                                    tracker.applyConditionToTarget(
+                                        creature,
+                                        condition
+                                    );
+                                }
+                            }
+                        ).open();
+                    });
+            });
+            menu.addSeparator();
             menu.addItem((item) => {
                 item.setIcon(HP)
                     .setTitle("Set Health/Status")

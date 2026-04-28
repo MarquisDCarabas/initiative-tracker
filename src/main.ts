@@ -32,6 +32,11 @@ import PlayerView from "./tracker/player-view";
 import { tracker } from "./tracker/stores/tracker";
 import { EncounterSuggester } from "./encounter/editor-suggestor";
 import { API } from "./api/api";
+import {
+    AmountModal,
+    ConditionPickModal,
+    CreaturePickModal
+} from "./tracker/ui/modals";
 
 import "@javalent/fantasy-statblocks";
 import type { StackRoller } from "@javalent/dice-roller";
@@ -426,8 +431,7 @@ export default class InitiativeTracker extends Plugin {
                         this.app.metadataCache.getFileCache(file)?.frontmatter;
                     if (!frontmatter) return;
                     for (let player of players) {
-                        const { ac, hp, modifier, level, name, token, image } =
-                            frontmatter;
+                        const { ac, hp, modifier, level, name, token, image } = frontmatter;
                         player.ac = ac;
                         player.hp = hp;
                         player.modifier = modifier;
@@ -597,6 +601,147 @@ export default class InitiativeTracker extends Plugin {
                     }
                     return true;
                 }
+            }
+        });
+
+        const getTarget = () =>
+            tracker.getOrderedCreatures().find((c) => c.target);
+
+        this.addCommand({
+            id: "pick-attacker",
+            name: "Pick Attacker",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (!view) return false;
+                if (!checking) {
+                    const list = tracker.getOrderedCreatures();
+                    new CreaturePickModal(
+                        this.app,
+                        list,
+                        "Pick attacker…",
+                        (creature) => {
+                            if (creature) tracker.setAttacker(creature);
+                        }
+                    ).open();
+                }
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: "pick-target",
+            name: "Pick Target",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (!view) return false;
+                if (!checking) {
+                    const list = tracker.getOrderedCreatures();
+                    new CreaturePickModal(
+                        this.app,
+                        list,
+                        "Pick target…",
+                        (creature) => {
+                            if (creature) tracker.setTarget(creature);
+                        }
+                    ).open();
+                }
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: "clear-target",
+            name: "Clear Target",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (!view) return false;
+                if (!checking) tracker.clearTarget();
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: "clear-attacker",
+            name: "Clear Out-of-Turn Attacker",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (!view) return false;
+                if (!checking) tracker.clearAttacker();
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: "damage-target",
+            name: "Damage Target",
+            checkCallback: (checking) => {
+                const view = this.view;
+                const target = getTarget();
+                if (!view || !target) return false;
+                if (!checking) {
+                    new AmountModal(
+                        this.app,
+                        `Damage ${target.getName()}`,
+                        (amount) => {
+                            if (amount != null) {
+                                tracker.applyDamageOrHeal(
+                                    target,
+                                    amount,
+                                    "damage"
+                                );
+                            }
+                        }
+                    ).open();
+                }
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: "heal-target",
+            name: "Heal Target",
+            checkCallback: (checking) => {
+                const view = this.view;
+                const target = getTarget();
+                if (!view || !target) return false;
+                if (!checking) {
+                    new AmountModal(
+                        this.app,
+                        `Heal ${target.getName()}`,
+                        (amount) => {
+                            if (amount != null) {
+                                tracker.applyDamageOrHeal(
+                                    target,
+                                    amount,
+                                    "heal"
+                                );
+                            }
+                        }
+                    ).open();
+                }
+                return true;
+            }
+        });
+
+        this.addCommand({
+            id: "condition-target",
+            name: "Apply Condition to Target",
+            checkCallback: (checking) => {
+                const view = this.view;
+                const target = getTarget();
+                if (!view || !target) return false;
+                if (!checking) {
+                    new ConditionPickModal(
+                        this.app,
+                        this.data.statuses,
+                        (condition) => {
+                            if (condition) {
+                                tracker.applyConditionToTarget(target, condition);
+                            }
+                        }
+                    ).open();
+                }
+                return true;
             }
         });
 

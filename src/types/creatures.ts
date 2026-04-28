@@ -23,6 +23,7 @@ export interface SRDMonster {
     hidden?: boolean;
     bestiary?: boolean;
     player?: boolean;
+    token?: string;
 
     [key: string]: any;
 }
@@ -51,6 +52,8 @@ export interface HomebrewCreature {
     token?: string;
     image?: string;
     bandId?: string | null;
+    target?: boolean;
+    outOfTurnActor?: boolean;
 }
 export type Condition = {
     name: string;

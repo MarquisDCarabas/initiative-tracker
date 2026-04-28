@@ -102,6 +102,8 @@
                         activeCreature.bandId &&
                         $bands.has(creature.id) &&
                         creature.bandId === activeCreature.bandId}
+                    class:targeted={creature.target}
+                    class:out-of-turn-actor={creature.outOfTurnActor}
                     class:viewing={creature.viewing}
                     class:friendly={creature.friendly}
                     animate:flip={{ duration: flipDurationMs }}
@@ -175,6 +177,27 @@
     }
     :global(.theme-dark) .initiative-tracker-creature.band-active {
         background-color: rgba(255, 255, 255, 0.04);
+    }
+    .initiative-tracker-creature.targeted :global(td) {
+        border-top-color: var(--text-error);
+        border-bottom-color: var(--text-error);
+    }
+    .initiative-tracker-creature.targeted :global(td:first-child) {
+        border-left-color: var(--text-error);
+    }
+    .initiative-tracker-creature.targeted :global(td:last-child) {
+        border-right-color: var(--text-error);
+    }
+    .initiative-tracker-creature.out-of-turn-actor :global(td) {
+        border-top-color: var(--text-accent);
+        border-bottom-color: var(--text-accent);
+        border-style: dashed;
+    }
+    .initiative-tracker-creature.out-of-turn-actor :global(td:first-child) {
+        border-left-color: var(--text-accent);
+    }
+    .initiative-tracker-creature.out-of-turn-actor :global(td:last-child) {
+        border-right-color: var(--text-accent);
     }
     .initiative-tracker-creature.disabled :global(*) {
         color: var(--text-faint);

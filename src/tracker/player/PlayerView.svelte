@@ -10,7 +10,7 @@
     import Portrait from "../ui/creatures/Portrait.svelte";
 
     import { tracker } from "../stores/tracker";
-    const { state, ordered, data } = tracker;
+    const { state, ordered, data, bands } = tracker;
 
     export let plugin: InitiativeTracker;
     setContext<InitiativeTracker>("plugin", plugin);
@@ -114,6 +114,7 @@
                     activeCreature.bandId &&
                     bandColor &&
                     creature.bandId === activeCreature.bandId}
+                class:targeted={creature.target}
             >
                 {#if showInitiative}
                     <td class="center">{creature.initiative}</td>
@@ -225,5 +226,15 @@
         width: 4px;
         background-color: var(--band-color);
         border-radius: 2px;
+    }
+    .targeted > td {
+        border-top: 1px solid var(--text-error);
+        border-bottom: 1px solid var(--text-error);
+    }
+    .targeted > td:first-child {
+        border-left: 1px solid var(--text-error);
+    }
+    .targeted > td:last-child {
+        border-right: 1px solid var(--text-error);
     }
 </style>

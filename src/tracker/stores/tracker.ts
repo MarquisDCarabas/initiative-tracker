@@ -700,6 +700,7 @@ function createTracker() {
                         }
                         _logger?.log("#####", `${next.getName()}'s turn`);
                         next.active = true;
+                        for (const c of creatures) c.outOfTurnActor = false;
                     }
                 }
                 return creatures;
@@ -743,6 +744,7 @@ function createTracker() {
                         }
                         _logger?.log("#####", `${prev.getName()}'s turn`);
                         prev.active = true;
+                        for (const c of creatures) c.outOfTurnActor = false;
                     }
                 }
                 return creatures;
@@ -830,6 +832,7 @@ function createTracker() {
                     _logger?.log("###", `Round ${round}`);
                 }
                 order[nextIdx].active = true;
+                for (const c of creatures) c.outOfTurnActor = false;
                 _logger?.log("#####", `${order[nextIdx].getName()}'s turn`);
                 return creatures;
             }),
@@ -867,7 +870,114 @@ function createTracker() {
                     }
                 }
                 order[prevIdx].active = true;
+                for (const c of creatures) c.outOfTurnActor = false;
                 _logger?.log("#####", `${order[prevIdx].getName()}'s turn`);
+                return creatures;
+            }),
+
+        setTarget: (creature: Creature | null) =>
+            updateAndSave((creatures) => {
+                for (const c of creatures) {
+                    c.target = !!creature && c.id === creature.id;
+                }
+                return creatures;
+            }),
+        clearTarget: () =>
+            updateAndSave((creatures) => {
+                for (const c of creatures) c.target = false;
+                return creatures;
+            }),
+        setAttacker: (creature: Creature | null) =>
+            updateAndSave((creatures) => {
+                if (!creature) {
+                    for (const c of creatures) c.outOfTurnActor = false;
+                    return creatures;
+                }
+                const active = creatures.find((c) => c.active);
+                const sameBand =
+                    active &&
+                    active.bandId &&
+                    creature.bandId === active.bandId;
+                if (active && (creature.id === active.id || sameBand)) {
+                    // Move active flag within active band (or to itself).
+                    for (const c of creatures) {
+                        c.active = c.id === creature.id;
+                        c.outOfTurnActor = false;
+                    }
+                    _logger?.log(
+                        "#####",
+                        `${creature.getName()} is now acting`
+                    );
+                } else {
+                    // Out-of-turn actor (reaction / legendary action).
+                    for (const c of creatures) {
+                        c.outOfTurnActor = c.id === creature.id;
+                    }
+                    _logger?.log(
+                        `${creature.getName()} is acting out-of-turn`
+                    );
+                }
+                return creatures;
+            }),
+        clearAttacker: () =>
+            updateAndSave((creatures) => {
+                for (const c of creatures) c.outOfTurnActor = false;
+                return creatures;
+            }),
+        applyDamageOrHeal: (
+            target: Creature,
+            amount: number,
+            kind: "damage" | "heal"
+        ) =>
+            updateAndSave((creatures) => {
+                if (!target || !Number.isFinite(amount) || amount === 0) {
+                    return creatures;
+                }
+                const delta = kind === "damage" ? -Math.abs(amount) : Math.abs(amount);
+                performCreatureUpdate(creatures, {
+                    creature: target,
+                    change: { hp: delta }
+                });
+                const actor =
+                    creatures.find((c) => c.outOfTurnActor) ??
+                    creatures.find((c) => c.active);
+                const verb = kind === "damage" ? "deals" : "heals";
+                const noun =
+                    kind === "damage"
+                        ? `${Math.abs(amount)} damage`
+                        : `${Math.abs(amount)} HP`;
+                if (actor && actor.id !== target.id) {
+                    _logger?.log(
+                        `${actor.getName()} ${verb} ${noun} to ${target.getName()}`
+                    );
+                } else {
+                    _logger?.log(
+                        kind === "damage"
+                            ? `${target.getName()} takes ${Math.abs(amount)} damage`
+                            : `${target.getName()} regains ${Math.abs(amount)} HP`
+                    );
+                }
+                return creatures;
+            }),
+        applyConditionToTarget: (target: Creature, condition: Condition) =>
+            updateAndSave((creatures) => {
+                if (!target || !condition) return creatures;
+                performCreatureUpdate(creatures, {
+                    creature: target,
+                    change: { status: [condition] }
+                });
+                const actor =
+                    creatures.find((c) => c.outOfTurnActor) ??
+                    creatures.find((c) => c.active);
+                if (actor && actor.id !== target.id) {
+                    _logger?.log(
+                        `${actor.getName()} applies ${condition.name} to ${target.getName()}`
+                    );
+                } else {
+                    _logger?.log(
+                        `${target.getName()} gains ${condition.name}`
+                    );
+                }
                 return creatures;
             }),
 
