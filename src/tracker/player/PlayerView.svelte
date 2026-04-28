@@ -47,6 +47,44 @@
     };
 
     $: activeAndVisible = $ordered.filter((c) => c.enabled && !c.hidden);
+    $: showInitiative = $data?.displayPlayerInitiative ?? true;
+    $: activeCreature = $ordered.find((c) => c.active);
+    $: visibleBandStripes = (() => {
+        const map = new Map<string, string>();
+        let palette = 0;
+        const palette_colors = [
+            "var(--color-red)",
+            "var(--color-orange)",
+            "var(--color-yellow)",
+            "var(--color-green)",
+            "var(--color-cyan)",
+            "var(--color-blue)",
+            "var(--color-purple)",
+            "var(--color-pink)"
+        ];
+        let i = 0;
+        while (i < activeAndVisible.length) {
+            const c = activeAndVisible[i];
+            if (!c.bandId) {
+                i++;
+                continue;
+            }
+            let j = i + 1;
+            while (
+                j < activeAndVisible.length &&
+                activeAndVisible[j].bandId === c.bandId
+            )
+                j++;
+            if (j - i >= 2) {
+                const color = palette_colors[palette % palette_colors.length];
+                for (let k = i; k < j; k++)
+                    map.set(activeAndVisible[k].id, color);
+                palette++;
+            }
+            i = j;
+        }
+        return map;
+    })();
 
     const name = (creature: Creature) => creature.getName();
     const friendIcon = (node: HTMLElement) => {
@@ -56,7 +94,10 @@
 
 <table class="initiative-tracker-table" transition:fade>
     <thead class="tracker-table-header">
-        <th style="width:5%"><strong use:iniIcon /></th>
+        {#if showInitiative}
+            <th style="width:5%"><strong use:iniIcon /></th>
+        {/if}
+        <th style="width:8px" />
         <th style="width:40px" />
         <th class="left" style="width:25%"><strong>Name</strong></th>
         <th style="width:15%" class="center"><strong use:hpIcon /></th>
@@ -64,8 +105,24 @@
     </thead>
     <tbody>
         {#each activeAndVisible as creature (creature.id)}
-            <tr class:active={amIActive(creature) && $state}>
-                <td class="center">{creature.initiative}</td>
+            {@const bandColor = visibleBandStripes.get(creature.id) ?? null}
+            <tr
+                class:active={amIActive(creature) && $state}
+                class:band-active={$state &&
+                    !amIActive(creature) &&
+                    activeCreature &&
+                    activeCreature.bandId &&
+                    bandColor &&
+                    creature.bandId === activeCreature.bandId}
+            >
+                {#if showInitiative}
+                    <td class="center">{creature.initiative}</td>
+                {/if}
+                <td
+                    class="band-cell"
+                    class:band-stripe={bandColor}
+                    style={bandColor ? `--band-color: ${bandColor};` : ""}
+                />
                 <td class="portrait-cell">
                     <Portrait {creature} />
                 </td>
@@ -148,5 +205,25 @@
     }
     :global(.theme-dark) .active {
         background-color: rgba(255, 255, 255, 0.1);
+    }
+    .band-active {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    :global(.theme-dark) .band-active {
+        background-color: rgba(255, 255, 255, 0.04);
+    }
+    .band-cell {
+        padding: 0;
+        position: relative;
+    }
+    .band-cell.band-stripe::before {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: 4px;
+        bottom: 4px;
+        width: 4px;
+        background-color: var(--band-color);
+        border-radius: 2px;
     }
 </style>

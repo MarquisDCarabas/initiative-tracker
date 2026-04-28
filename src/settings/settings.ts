@@ -258,6 +258,19 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 );
             });
         new Setting(additionalContainer)
+            .setName("Display Initiative Column in Player View")
+            .setDesc(
+                "If turned off, the initiative column is hidden from players. Useful when running initiative bands."
+            )
+            .addToggle((t) => {
+                t.setValue(
+                    this.plugin.data.displayPlayerInitiative ?? true
+                ).onChange(async (v) => {
+                    this.plugin.data.displayPlayerInitiative = v;
+                    await this.plugin.saveSettings();
+                });
+            });
+        new Setting(additionalContainer)
             .setName("Roll HP for Creatures")
             .setDesc(
                 createFragment((e) => {

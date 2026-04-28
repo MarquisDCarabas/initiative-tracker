@@ -10,10 +10,17 @@
     import { createEventDispatcher } from "svelte";
 
     const dispatch = createEventDispatcher();
-    const { updateTarget } = tracker;
+    const { updateTarget, bands, ordered } = tracker;
 
     export let creature: Creature;
     $: statuses = creature.status;
+    $: bandColor = $bands.get(creature.id) ?? null;
+    $: activeCreature = $ordered.find((c) => c.active);
+    $: bandActive =
+        !!bandColor &&
+        !!activeCreature &&
+        activeCreature.id !== creature.id &&
+        activeCreature.bandId === creature.bandId;
 
     const name = () => creature.getName();
     const statblockLink = () => creature.getStatblockLink();
@@ -55,7 +62,12 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<td class="initiative-container" on:click={(e) => e.stopPropagation()}>
+<td
+    class="initiative-container"
+    class:band-stripe={bandColor}
+    style={bandColor ? `--band-color: ${bandColor};` : ""}
+    on:click={(e) => e.stopPropagation()}
+>
     <Initiative
         initiative={creature.initiative}
         modifier={[creature.modifier].flat().reduce((a, b) => a + b, 0)}
@@ -190,6 +202,17 @@
     .initiative-container {
         border-top-left-radius: 0.25rem;
         border-bottom-left-radius: 0.25rem;
+        position: relative;
+    }
+    .band-stripe::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 4px;
+        background-color: var(--band-color);
+        border-radius: 2px;
     }
     .portrait-container {
         padding: 0 0.25rem;

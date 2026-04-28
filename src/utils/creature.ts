@@ -49,6 +49,7 @@ export class Creature {
     path: string;
     token?: string;
     image?: string;
+    bandId: string | null = null;
     setModifier(modifier: number[] | number) {
         if (modifier) {
             if (Array.isArray(modifier)) {
@@ -107,6 +108,7 @@ export class Creature {
         this.cr = creature.cr;
         this.token = creature.token;
         this.image = creature.image;
+        this.bandId = (creature as HomebrewCreature).bandId ?? null;
         this.id = creature.id ?? getId();
         if ("statblock-link" in creature) {
             this["statblock-link"] = (creature as any)[
@@ -251,7 +253,8 @@ export class Creature {
             hit_dice: this.hit_dice,
             rollHP: this.rollHP,
             token: this.token,
-            image: this.image
+            image: this.image,
+            bandId: this.bandId
         };
     }
 

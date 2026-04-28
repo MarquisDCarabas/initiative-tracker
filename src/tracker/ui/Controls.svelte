@@ -50,6 +50,12 @@
             .setTooltip("Previous")
             .onClick(() => tracker.goToPrevious());
     };
+    const applyBandsButton = (node: HTMLElement) => {
+        new ExtraButtonComponent(node)
+            .setIcon("layers")
+            .setTooltip("Apply Initiative Bands")
+            .onClick(() => tracker.autoBand());
+    };
 
     const plugin = getContext<InitiativeTracker>("plugin");
 
@@ -322,6 +328,7 @@
         {/if}
     </div>
     <div class="clean">
+        <div use:applyBandsButton />
         {#if $logFile}
             <div
                 use:logFileButton

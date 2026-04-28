@@ -14,7 +14,8 @@
     import { getContext } from "svelte";
 
     const plugin = getContext<InitiativeTracker>("plugin");
-    const { state, ordered } = tracker;
+    const { state, ordered, bands } = tracker;
+    $: activeCreature = $ordered.find((c) => c.active);
 
     $: items = [...$ordered].map((c) => {
         return { creature: c, id: getId() };
@@ -95,6 +96,12 @@
                     class="draggable initiative-tracker-creature"
                     class:disabled={!creature.enabled}
                     class:active={$state && creature.active}
+                    class:band-active={$state &&
+                        !creature.active &&
+                        activeCreature &&
+                        activeCreature.bandId &&
+                        $bands.has(creature.id) &&
+                        creature.bandId === activeCreature.bandId}
                     class:viewing={creature.viewing}
                     class:friendly={creature.friendly}
                     animate:flip={{ duration: flipDurationMs }}
@@ -162,6 +169,12 @@
     }
     :global(.theme-dark) .initiative-tracker-creature.active {
         background-color: rgba(255, 255, 255, 0.1);
+    }
+    .initiative-tracker-creature.band-active {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    :global(.theme-dark) .initiative-tracker-creature.band-active {
+        background-color: rgba(255, 255, 255, 0.04);
     }
     .initiative-tracker-creature.disabled :global(*) {
         color: var(--text-faint);

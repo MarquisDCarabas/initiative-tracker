@@ -50,6 +50,7 @@ export interface HomebrewCreature {
     "statblock-link"?: string;
     token?: string;
     image?: string;
+    bandId?: string | null;
 }
 export type Condition = {
     name: string;

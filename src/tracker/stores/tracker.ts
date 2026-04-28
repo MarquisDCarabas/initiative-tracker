@@ -157,6 +157,54 @@ function createTracker() {
         return sort;
     });
 
+    const BAND_PALETTE = [
+        "var(--color-red)",
+        "var(--color-orange)",
+        "var(--color-yellow)",
+        "var(--color-green)",
+        "var(--color-cyan)",
+        "var(--color-blue)",
+        "var(--color-purple)",
+        "var(--color-pink)"
+    ];
+    function getCreatureSide(c: Creature): "player" | "friendly" | "hostile" {
+        if (c.player) return "player";
+        if (c.friendly) return "friendly";
+        return "hostile";
+    }
+    function newBandId() {
+        return "BAND_" + getId();
+    }
+    /**
+     * Returns Map<creature.id, color> for creatures that are part of a
+     * contiguous run (length >= 2) of the same bandId. Stale or non-adjacent
+     * bandIds yield no entry, so they don't render a stripe.
+     */
+    function computeBandStripes(list: Creature[]): Map<string, string> {
+        const map = new Map<string, string>();
+        let palette = 0;
+        let i = 0;
+        while (i < list.length) {
+            const c = list[i];
+            if (!c.bandId) {
+                i++;
+                continue;
+            }
+            let j = i + 1;
+            while (j < list.length && list[j].bandId === c.bandId) j++;
+            if (j - i >= 2) {
+                const color = BAND_PALETTE[palette % BAND_PALETTE.length];
+                for (let k = i; k < j; k++) map.set(list[k].id, color);
+                palette++;
+            }
+            i = j;
+        }
+        return map;
+    }
+    const bands = derived(ordered, ($ordered) =>
+        computeBandStripes($ordered)
+    );
+
     const logNewInitiative = (creature: Creature) => {
         _logger?.log(
             `${creature.getName()} initiative changed to ${creature.initiative}`
@@ -701,6 +749,127 @@ function createTracker() {
             }),
 
         ordered,
+        bands,
+        autoBand: () =>
+            updateAndSave((creatures) => {
+                const order = current_order;
+                let runStart = 0;
+                for (let i = 1; i <= order.length; i++) {
+                    const sameSide =
+                        i < order.length &&
+                        getCreatureSide(order[i]) ===
+                            getCreatureSide(order[runStart]);
+                    if (!sameSide) {
+                        const runLen = i - runStart;
+                        if (runLen >= 2) {
+                            const id = newBandId();
+                            for (let j = runStart; j < i; j++) {
+                                order[j].bandId = id;
+                            }
+                        } else {
+                            order[runStart].bandId = null;
+                        }
+                        runStart = i;
+                    }
+                }
+                _logger?.log("Initiative bands applied.");
+                return creatures;
+            }),
+        mergeBandUp: (creature: Creature) =>
+            updateAndSave((creatures) => {
+                const order = current_order;
+                const idx = order.indexOf(creature);
+                if (idx <= 0) return creatures;
+                const above = order[idx - 1];
+                if (above.bandId) {
+                    creature.bandId = above.bandId;
+                } else {
+                    const id = newBandId();
+                    above.bandId = id;
+                    creature.bandId = id;
+                }
+                return creatures;
+            }),
+        breakBand: (creature: Creature) =>
+            updateAndSave((creatures) => {
+                creature.bandId = null;
+                return creatures;
+            }),
+        goToNextBand: () =>
+            updateAndSave((creatures) => {
+                const order = current_order;
+                if (!order.length) return creatures;
+                const current = order.findIndex((c) => c.active);
+                const startIdx = current === -1 ? -1 : current;
+                const startBand =
+                    current === -1 ? null : order[current].bandId;
+                let nextIdx = -1;
+                for (let off = 1; off <= order.length; off++) {
+                    const i = (startIdx + off + order.length) % order.length;
+                    const c = order[i];
+                    if (!c.enabled) continue;
+                    const isNewBand =
+                        startBand === null ||
+                        c.bandId === null ||
+                        c.bandId !== startBand;
+                    if (isNewBand) {
+                        nextIdx = i;
+                        break;
+                    }
+                }
+                if (nextIdx === -1) return creatures;
+                if (current !== -1) order[current].active = false;
+                if (nextIdx <= startIdx && startIdx !== -1) {
+                    const round = get($round) + 1;
+                    $round.set(round);
+                    for (const c of creatures) {
+                        c.status = new Set(
+                            [...c.status].filter((s) => !s.resetOnRound)
+                        );
+                    }
+                    _logger?.log("###", `Round ${round}`);
+                }
+                order[nextIdx].active = true;
+                _logger?.log("#####", `${order[nextIdx].getName()}'s turn`);
+                return creatures;
+            }),
+        goToPreviousBand: () =>
+            updateAndSave((creatures) => {
+                const order = current_order;
+                if (!order.length) return creatures;
+                const current = order.findIndex((c) => c.active);
+                if (current === -1) {
+                    order[0].active = true;
+                    return creatures;
+                }
+                const startBand = order[current].bandId;
+                let prevIdx = -1;
+                for (let off = 1; off <= order.length; off++) {
+                    const i = (current - off + order.length) % order.length;
+                    const c = order[i];
+                    if (!c.enabled) continue;
+                    const isNewBand =
+                        startBand === null ||
+                        c.bandId === null ||
+                        c.bandId !== startBand;
+                    if (isNewBand) {
+                        prevIdx = i;
+                        break;
+                    }
+                }
+                if (prevIdx === -1) return creatures;
+                order[current].active = false;
+                if (prevIdx > current) {
+                    const round = get($round) - 1;
+                    if (round >= 1) {
+                        $round.set(round);
+                        _logger?.log("###", `Round ${round}`);
+                    }
+                }
+                order[prevIdx].active = true;
+                _logger?.log("#####", `${order[prevIdx].getName()}'s turn`);
+                return creatures;
+            }),
 
         add: async (
             plugin: InitiativeTracker,

@@ -558,6 +558,48 @@ export default class InitiativeTracker extends Plugin {
             }
         });
 
+        this.addCommand({
+            id: "next-band",
+            name: "Next Band",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (view && tracker.getState()) {
+                    if (!checking) {
+                        tracker.goToNextBand();
+                    }
+                    return true;
+                }
+            }
+        });
+
+        this.addCommand({
+            id: "prev-band",
+            name: "Previous Band",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (view && tracker.getState()) {
+                    if (!checking) {
+                        tracker.goToPreviousBand();
+                    }
+                    return true;
+                }
+            }
+        });
+
+        this.addCommand({
+            id: "apply-bands",
+            name: "Apply Initiative Bands",
+            checkCallback: (checking) => {
+                const view = this.view;
+                if (view) {
+                    if (!checking) {
+                        tracker.autoBand();
+                    }
+                    return true;
+                }
+            }
+        });
+
         for (const encounter in this.data.encounters) {
             this.registerCommand(encounter);
         }

@@ -98,6 +98,28 @@
                         });
                 });
             }
+            menu.addSeparator();
+            const order = tracker.getOrderedCreatures();
+            const idx = order.indexOf(creature);
+            if (idx > 0) {
+                menu.addItem((item) => {
+                    item.setIcon("merge")
+                        .setTitle("Merge band with above")
+                        .onClick(() => {
+                            tracker.mergeBandUp(creature);
+                        });
+                });
+            }
+            if (creature.bandId) {
+                menu.addItem((item) => {
+                    item.setIcon("unlink")
+                        .setTitle("Break from band")
+                        .onClick(() => {
+                            tracker.breakBand(creature);
+                        });
+                });
+            }
+            menu.addSeparator();
             menu.addItem((item) => {
                 item.setIcon(REMOVE)
                     .setTitle("Remove")
