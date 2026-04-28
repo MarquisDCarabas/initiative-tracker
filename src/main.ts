@@ -426,12 +426,15 @@ export default class InitiativeTracker extends Plugin {
                         this.app.metadataCache.getFileCache(file)?.frontmatter;
                     if (!frontmatter) return;
                     for (let player of players) {
-                        const { ac, hp, modifier, level, name } = frontmatter;
+                        const { ac, hp, modifier, level, name, token, image } =
+                            frontmatter;
                         player.ac = ac;
                         player.hp = hp;
                         player.modifier = modifier;
                         player.level = level;
                         player.name = name ? name : player.name;
+                        player.token = token;
+                        player.image = image;
                         player["statblock-link"] =
                             frontmatter["statblock-link"];
 

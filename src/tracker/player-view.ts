@@ -22,7 +22,7 @@ export default class PlayerView extends ItemView {
     async onOpen() {
         this._app = new App({
             target: this.contentEl,
-            props: {}
+            props: { plugin: this.plugin }
         });
     }
     async onClose() {

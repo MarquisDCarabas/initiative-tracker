@@ -74,7 +74,8 @@
                 aria-label="Re-Roll Initiatives"
                 on:click={(evt) => tracker.roll(plugin)}
             />
-            <th class="left" style="width:55%">Name</th>
+            <th style="width:40px" />
+            <th class="left" style="width:50%">Name</th>
             <th style="width:15%" use:hpIcon class="center" />
             <th style="width:15%" use:acIcon class="center" />
             <th style="width:5%" />

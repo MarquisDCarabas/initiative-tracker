@@ -4,6 +4,7 @@
     import Initiative from "./Initiative.svelte";
     import CreatureControls from "./CreatureControls.svelte";
     import Status from "./Status.svelte";
+    import Portrait from "./Portrait.svelte";
     import { Platform, setIcon } from "obsidian";
     import { tracker } from "../../stores/tracker";
     import { createEventDispatcher } from "svelte";
@@ -66,6 +67,9 @@
             });
         }}
     />
+</td>
+<td class="portrait-container" on:click|stopPropagation>
+    <Portrait {creature} />
 </td>
 <td class="name-container">
     <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -186,6 +190,10 @@
     .initiative-container {
         border-top-left-radius: 0.25rem;
         border-bottom-left-radius: 0.25rem;
+    }
+    .portrait-container {
+        padding: 0 0.25rem;
+        vertical-align: middle;
     }
     .controls-container {
         border-top-right-radius: 0.25rem;

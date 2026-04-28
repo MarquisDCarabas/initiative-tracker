@@ -49,6 +49,68 @@ export function getFromCreatureOrBestiary<T>(
     return getter(plugin.getCreatureFromBestiary(creature.name));
 }
 
+export function resolveImageUrl(
+    plugin: InitiativeTracker,
+    raw: string | undefined,
+    sourcePath = ""
+): string | null {
+    if (!raw || typeof raw !== "string") return null;
+    let value = raw.trim();
+    if (!value) return null;
+
+    const wiki = value.match(/^!?\[\[(.+?)(?:\|.*?)?\]\]$/);
+    if (wiki) value = wiki[1].trim();
+
+    if (/^(https?:|data:|app:|blob:|file:)/i.test(value)) return value;
+
+    const file = plugin.app.metadataCache.getFirstLinkpathDest(
+        value,
+        sourcePath
+    );
+    if (file) return plugin.app.vault.getResourcePath(file);
+    return null;
+}
+
+export function getCreatureImageUrl(
+    plugin: InitiativeTracker,
+    creature: Creature
+): string | null {
+    const fromToken = resolveImageUrl(
+        plugin,
+        creature.token,
+        creature.path ?? ""
+    );
+    if (fromToken) return fromToken;
+    const fromImage = resolveImageUrl(
+        plugin,
+        creature.image,
+        creature.path ?? ""
+    );
+    if (fromImage) return fromImage;
+    if (creature.path) {
+        const file = plugin.app.metadataCache.getFirstLinkpathDest(
+            creature.path,
+            ""
+        );
+        if (file) {
+            const fm = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+            const fmToken = fm?.token;
+            if (fmToken) return resolveImageUrl(plugin, fmToken, file.path);
+            const fmImage = fm?.image;
+            if (fmImage) return resolveImageUrl(plugin, fmImage, file.path);
+        }
+    }
+    return null;
+}
+
+export function getInitialsForPortrait(name: string): string {
+    if (!name) return "?";
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return "?";
+    if (words.length === 1) return words[0][0].toUpperCase();
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
 export const buildLoader = (text: string): HTMLDivElement => {
     const loading = createDiv({
         cls: "is-loading"

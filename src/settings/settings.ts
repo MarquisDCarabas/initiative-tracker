@@ -1086,9 +1086,11 @@ class NewPlayerModal extends Modal {
                     this.player.name = file.basename;
 
                     if (!metaData || !metaData.frontmatter) return;
-                    const { ac, hp, modifier, level, name } =
+                    const { ac, hp, modifier, level, name, token, image } =
                         metaData.frontmatter;
                     this.player.name = name ?? this.player.name;
+                    this.player.token = token ?? this.player.token;
+                    this.player.image = image ?? this.player.image;
                     this.player.ac = parseInt(ac ?? this.player.ac, 10);
                     this.player.hp = parseInt(hp ?? this.player.hp, 10);
                     this.player.level = parseInt(

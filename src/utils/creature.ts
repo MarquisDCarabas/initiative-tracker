@@ -47,6 +47,8 @@ export class Creature {
     "statblock-link": string;
     cr: string | number;
     path: string;
+    token?: string;
+    image?: string;
     setModifier(modifier: number[] | number) {
         if (modifier) {
             if (Array.isArray(modifier)) {
@@ -103,6 +105,8 @@ export class Creature {
         this.xp = creature.xp;
 
         this.cr = creature.cr;
+        this.token = creature.token;
+        this.image = creature.image;
         this.id = creature.id ?? getId();
         if ("statblock-link" in creature) {
             this["statblock-link"] = (creature as any)[
@@ -209,6 +213,8 @@ export class Creature {
 
         this.marker = creature.marker;
         this.source = creature.source;
+        this.token = creature.token ?? this.token;
+        this.image = creature.image ?? this.image;
     }
 
     toProperties() {
@@ -243,7 +249,9 @@ export class Creature {
             friendly: this.friendly,
             "statblock-link": this["statblock-link"],
             hit_dice: this.hit_dice,
-            rollHP: this.rollHP
+            rollHP: this.rollHP,
+            token: this.token,
+            image: this.image
         };
     }
 

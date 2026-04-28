@@ -5,10 +5,15 @@
 
     import { AC, FRIENDLY, HP, INITIATIVE } from "src/utils";
     import type { Creature } from "src/utils/creature";
-    import { createEventDispatcher } from "svelte";
+    import type InitiativeTracker from "src/main";
+    import { createEventDispatcher, setContext } from "svelte";
+    import Portrait from "../ui/creatures/Portrait.svelte";
 
     import { tracker } from "../stores/tracker";
     const { state, ordered, data } = tracker;
+
+    export let plugin: InitiativeTracker;
+    setContext<InitiativeTracker>("plugin", plugin);
 
     const hpIcon = (node: HTMLElement) => {
         setIcon(node, HP);
@@ -52,7 +57,8 @@
 <table class="initiative-tracker-table" transition:fade>
     <thead class="tracker-table-header">
         <th style="width:5%"><strong use:iniIcon /></th>
-        <th class="left" style="width:30%"><strong>Name</strong></th>
+        <th style="width:40px" />
+        <th class="left" style="width:25%"><strong>Name</strong></th>
         <th style="width:15%" class="center"><strong use:hpIcon /></th>
         <th><strong> Statuses </strong></th>
     </thead>
@@ -60,6 +66,9 @@
         {#each activeAndVisible as creature (creature.id)}
             <tr class:active={amIActive(creature) && $state}>
                 <td class="center">{creature.initiative}</td>
+                <td class="portrait-cell">
+                    <Portrait {creature} />
+                </td>
                 <td class='name'>
                     {#if creature.friendly}
                         <div
@@ -117,6 +126,10 @@
     }
     .center {
         text-align: center;
+    }
+    .portrait-cell {
+        padding: 0 0.25rem;
+        vertical-align: middle;
     }
     .healthy {
         color: var(--text-success);
