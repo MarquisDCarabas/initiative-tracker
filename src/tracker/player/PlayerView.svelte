@@ -6,7 +6,7 @@
     import { AC, FRIENDLY, HP, INITIATIVE } from "src/utils";
     import type { Creature } from "src/utils/creature";
     import type InitiativeTracker from "src/main";
-    import { createEventDispatcher, setContext } from "svelte";
+    import { afterUpdate, createEventDispatcher, onDestroy, setContext, tick } from "svelte";
     import Portrait from "../ui/creatures/Portrait.svelte";
 
     import { tracker } from "../stores/tracker";
@@ -90,15 +90,117 @@
     const friendIcon = (node: HTMLElement) => {
         setIcon(node, FRIENDLY);
     };
+
+    // --- Auto-fit sizing ---------------------------------------------------
+    // Scale font-size so rows fill the available height. Portrait sizes use em
+    // units, so they grow with the font. When rows would shrink below the
+    // readable floor, the container scrolls and the active row auto-scrolls
+    // into view.
+    const MIN_FONT_PX = 16;
+    const MAX_FONT_PX = 160;
+    // Initial guess; refined by measuring actual row height after first paint.
+    const ROW_TO_FONT_INITIAL = 2.2;
+
+    let container: HTMLElement;
+    let headerEl: HTMLElement;
+    let containerHeight = 0;
+    let headerHeight = 0;
+    let resizeObserver: ResizeObserver | undefined;
+
+    const remeasure = () => {
+        if (container) containerHeight = container.clientHeight;
+        if (headerEl) headerHeight = headerEl.offsetHeight;
+    };
+
+    const observe = (node: HTMLElement) => {
+        container = node;
+        resizeObserver = new ResizeObserver(remeasure);
+        resizeObserver.observe(node);
+        containerHeight = node.clientHeight;
+        return {
+            destroy() {
+                resizeObserver?.disconnect();
+                resizeObserver = undefined;
+            }
+        };
+    };
+
+    const measureHeader = (node: HTMLElement) => {
+        headerEl = node;
+        headerHeight = node.offsetHeight;
+        resizeObserver?.observe(node);
+        return {
+            destroy() {
+                resizeObserver?.unobserve(node);
+            }
+        };
+    };
+
+    let rowToFont = ROW_TO_FONT_INITIAL;
+    let tableEl: HTMLElement;
+
+    // Safety margin in px so the last row never gets clipped at the boundary.
+    const FIT_MARGIN_PX = 4;
+
+    $: rowCount = activeAndVisible.length;
+    $: available = Math.max(0, containerHeight - headerHeight - FIT_MARGIN_PX);
+    // Round to whole px to prevent oscillation between header reflow and font recalc.
+    $: ideal = rowCount > 0
+        ? Math.floor(available / rowCount / rowToFont)
+        : MAX_FONT_PX;
+    $: fontPx = Math.max(MIN_FONT_PX, Math.min(MAX_FONT_PX, ideal));
+    $: overflowing = rowCount > 0 && ideal < MIN_FONT_PX;
+
+    // After the table renders, compare its actual height against the container
+    // and adjust the rowToFont ratio so the next pass fills (without clipping).
+    // Measures the WHOLE table — captures padding, border-spacing, etc. that a
+    // single-row measurement misses. Uses afterUpdate (not $:) to avoid the
+    // cyclical-dependency error since `ideal` reads `rowToFont`.
+    afterUpdate(() => {
+        if (!container || !tableEl || rowCount === 0 || fontPx <= 0) return;
+        if (ideal !== fontPx) return;  // clamped — can't adjust meaningfully
+        const containerH = container.clientHeight;
+        const tableH = tableEl.offsetHeight;
+        if (tableH <= 0 || containerH <= 0) return;
+        // Target the table at (container - margin) to leave a hairline gap.
+        const target = containerH - FIT_MARGIN_PX;
+        const scale = target / tableH;
+        if (Math.abs(1 - scale) < 0.02) return;  // within ~2% — good enough
+        const next = rowToFont / scale;
+        if (next > 0.8 && next < 5) {
+            rowToFont = next;
+        }
+    });
+
+    // Auto-scroll active row into view when it changes.
+    $: activeId = $ordered.find((c) => c.active)?.id;
+    let lastScrolledId: string | number | undefined;
+    $: if (container && activeId !== undefined && activeId !== lastScrolledId) {
+        lastScrolledId = activeId;
+        tick().then(() => {
+            const row = container.querySelector(
+                `tr[data-creature-id="${activeId}"]`
+            ) as HTMLElement | null;
+            row?.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+    }
+
+    onDestroy(() => resizeObserver?.disconnect());
 </script>
 
-<table class="initiative-tracker-table" transition:fade>
-    <thead class="tracker-table-header">
+<div
+    class="player-view-fit"
+    class:overflowing
+    style="--player-view-font-size: {fontPx}px"
+    use:observe
+>
+<table class="initiative-tracker-table" transition:fade bind:this={tableEl}>
+    <thead class="tracker-table-header" use:measureHeader>
         {#if showInitiative}
             <th style="width:5%"><strong use:iniIcon /></th>
         {/if}
         <th style="width:8px" />
-        <th style="width:40px" />
+        <th class="portrait-col" />
         <th class="left" style="width:25%"><strong>Name</strong></th>
         <th style="width:15%" class="center"><strong use:hpIcon /></th>
         <th><strong> Statuses </strong></th>
@@ -107,6 +209,7 @@
         {#each activeAndVisible as creature (creature.id)}
             {@const bandColor = visibleBandStripes.get(creature.id) ?? null}
             <tr
+                data-creature-id={creature.id}
                 class:active={amIActive(creature) && $state}
                 class:band-active={$state &&
                     !amIActive(creature) &&
@@ -154,6 +257,7 @@
         {/each}
     </tbody>
 </table>
+</div>
 
 <style scoped>
     .full-center {
@@ -162,6 +266,20 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    .player-view-fit {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        font-size: var(--player-view-font-size, 1rem);
+    }
+    .player-view-fit.overflowing {
+        overflow-y: auto;
+    }
+    .portrait-col {
+        width: 2.5em;
     }
     .initiative-tracker-table {
         padding: 0.5rem;
@@ -172,7 +290,7 @@
         table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0 2px;
-        font-size: larger;
+        font-size: inherit;
     }
     .left {
         text-align: left;

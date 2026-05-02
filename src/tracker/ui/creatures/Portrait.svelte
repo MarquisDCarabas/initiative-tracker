@@ -22,8 +22,8 @@
 
 <style scoped>
     .initiative-tracker-portrait {
-        width: 32px;
-        height: 32px;
+        width: 2em;
+        height: 2em;
         border-radius: 50%;
         overflow: hidden;
         display: flex;
@@ -31,7 +31,6 @@
         justify-content: center;
         background-color: var(--background-modifier-border);
         color: var(--text-muted);
-        font-size: 0.75rem;
         font-weight: 600;
         flex-shrink: 0;
     }
@@ -42,6 +41,7 @@
         display: block;
     }
     .initials {
+        font-size: 0.75em;
         user-select: none;
     }
 </style>
