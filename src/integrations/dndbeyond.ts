@@ -1,0 +1,329 @@
+import { requestUrl } from "obsidian";
+
+/**
+ * D&D Beyond's public, read-only character endpoint.
+ *
+ * It returns a JSON envelope shaped like:
+ *   { id, success, message, data: { ...the actual character... } }
+ *
+ * We hit the "v5" character-service host (not www.dndbeyond.com) because it
+ * serves clean JSON and is what the DDB site itself calls.
+ */
+const DDB_CHARACTER_ENDPOINT =
+    "https://character-service.dndbeyond.com/character/v5/character/";
+
+/** Ability scores are stored in a fixed array; Constitution is id 3. */
+const CONSTITUTION_STAT_ID = 3;
+
+/** The three numbers the rest of the plugin actually cares about. */
+export interface DndBeyondHP {
+    /** Current hit points = max HP minus damage already taken. */
+    currentHP: number;
+    /** Maximum hit points (see computeMaxHP for how it's assembled). */
+    maxHP: number;
+    /** Temporary hit points (a separate pool that sits on top of current HP). */
+    tempHP: number;
+}
+
+/** One ability score entry, e.g. { id: 3, value: 14 } for Constitution. */
+interface DdbStat {
+    id: number;
+    value: number | null;
+}
+
+/** One class the character has levels in. We only need the level count. */
+interface DdbClass {
+    level: number;
+}
+
+/**
+ * A single rules modifier (a racial bonus, a feat, an item effect, etc.).
+ * `subType` names what it touches (e.g. "constitution-score",
+ * "hit-points-per-level") and `type` is how it touches it ("bonus", "set", ...).
+ */
+interface DdbModifier {
+    type: string;
+    subType: string;
+    value: number | null;
+}
+
+/**
+ * Only the slice of the character payload we read. The real object has
+ * hundreds of fields; typing just these keeps the parsing honest and readable.
+ */
+interface DdbCharacterData {
+    /**
+     * HP granted purely by hit dice across all levels. This deliberately does
+     * NOT include the Constitution modifier or per-level HP feats — we add those
+     * in computeMaxHP() below.
+     */
+    baseHitPoints: number;
+    /** Flat bonus HP added to the maximum (e.g. some magic items). null = none. */
+    bonusHitPoints: number | null;
+    /** A hard override of the maximum HP. When set, it wins over everything else. */
+    overrideHitPoints: number | null;
+    /** HP that has been removed by damage. current = max - removed. */
+    removedHitPoints: number;
+    /** Temporary HP pool. */
+    temporaryHitPoints: number;
+    /** Base ability scores (point-buy/rolled), one entry per ability. */
+    stats: DdbStat[];
+    /** Legacy flat bonuses to ability scores; usually all null. */
+    bonusStats: DdbStat[];
+    /** Manual overrides of ability scores; null unless the player set one. */
+    overrideStats: DdbStat[];
+    /** The character's classes; total level is the sum of these levels. */
+    classes: DdbClass[];
+    /**
+     * Modifiers grouped by source: { race, class, background, item, feat, ... }.
+     * Racial CON bonuses, ASIs, feats and items all live here — NOT in `stats`.
+     */
+    modifiers: { [group: string]: DdbModifier[] };
+}
+
+/** The envelope the endpoint wraps every character in. */
+interface DdbCharacterResponse {
+    success: boolean;
+    message: string;
+    data: DdbCharacterData | null;
+}
+
+/** A fully itemized max-HP calculation, handy for the debug command's logging. */
+interface MaxHpBreakdown {
+    maxHP: number;
+    base: number;
+    bonus: number;
+    conMod: number;
+    totalLevel: number;
+    perLevelHp: number;
+    /** The override value if one was used, otherwise null. */
+    override: number | null;
+}
+
+/**
+ * Fetch a D&D Beyond character's HP and reduce it to { currentHP, maxHP, tempHP }.
+ *
+ * @param characterId The numeric character ID (the number in a DDB sheet URL,
+ *                     e.g. dndbeyond.com/characters/12345678 -> 12345678).
+ * @param debug       When true, logs a full HP breakdown to the console. Used by
+ *                    the temporary debug command; remove with it.
+ * @throws If the ID is malformed, the character is private/missing, the network
+ *         fails, or the response can't be understood — each with a clear message.
+ */
+export async function fetchDndBeyondHP(
+    characterId: number | string,
+    debug = false
+): Promise<DndBeyondHP> {
+    // --- 1. Validate the ID up front so we never build a nonsense URL. ----------
+    // DDB character IDs are positive integers; reject anything else early.
+    const id = String(characterId).trim();
+    if (!/^\d+$/.test(id)) {
+        throw new Error(
+            `Invalid D&D Beyond character ID "${characterId}" — it must be a positive integer.`
+        );
+    }
+
+    const url = `${DDB_CHARACTER_ENDPOINT}${id}`;
+
+    // --- 2. Make the request through Obsidian's requestUrl. --------------------
+    // We use requestUrl (NOT fetch) on purpose: it runs through Obsidian's own
+    // networking layer, which bypasses the browser CORS restrictions that would
+    // otherwise block a cross-origin call to dndbeyond.com from a plugin.
+    //
+    // `throw: false` tells requestUrl not to throw on HTTP error statuses (403,
+    // 404, etc.) so we can inspect the status ourselves and produce friendly
+    // messages. A genuine network failure (no connection, DNS error) still
+    // rejects the promise, which we catch and rewrap below.
+    let response;
+    try {
+        response = await requestUrl({ url, method: "GET", throw: false });
+    } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        throw new Error(
+            `Could not reach D&D Beyond while fetching character ${id}. ` +
+                `Check your internet connection. (${detail})`
+        );
+    }
+
+    // --- 3. Turn HTTP error statuses into clear errors. ------------------------
+    // A private character (or one that doesn't exist) typically comes back as
+    // 403 Forbidden or 404 Not Found.
+    if (response.status === 403 || response.status === 404) {
+        throw new Error(
+            `D&D Beyond character ${id} is private or does not exist ` +
+                `(HTTP ${response.status}). Set the character's privacy to ` +
+                `"Public" on D&D Beyond and try again.`
+        );
+    }
+    if (response.status < 200 || response.status >= 300) {
+        throw new Error(
+            `D&D Beyond returned an unexpected status (HTTP ${response.status}) ` +
+                `for character ${id}.`
+        );
+    }
+
+    // --- 4. Parse the JSON body. ----------------------------------------------
+    // response.json is a getter that parses response.text; it can throw if the
+    // body isn't valid JSON, so guard it.
+    let payload: DdbCharacterResponse;
+    try {
+        payload = response.json as DdbCharacterResponse;
+    } catch {
+        throw new Error(
+            `D&D Beyond sent a response for character ${id} that wasn't valid JSON.`
+        );
+    }
+
+    // The envelope itself reports success/failure. A private character can also
+    // surface here as success === false rather than via an HTTP status.
+    if (!payload || payload.success === false || !payload.data) {
+        const reason =
+            payload?.message?.trim() ||
+            "the character may be private or may not exist";
+        throw new Error(
+            `D&D Beyond could not return character ${id}: ${reason}.`
+        );
+    }
+
+    // --- 5. Reduce the raw HP fields to the three numbers we want. -------------
+    const data = payload.data;
+    const removed = toNumber(data.removedHitPoints);
+    const tempHP = toNumber(data.temporaryHitPoints);
+
+    const max = computeMaxHP(data);
+    // Current HP is simply the max minus whatever damage has been logged on DDB.
+    const currentHP = max.maxHP - removed;
+
+    if (debug) {
+        // Itemized so you can see exactly where the number comes from.
+        console.log(
+            `[initiative-tracker] DDB HP breakdown for character ${id}`,
+            { ...max, removed, tempHP, currentHP }
+        );
+    }
+
+    return { currentHP, maxHP: max.maxHP, tempHP };
+}
+
+/**
+ * Assemble the maximum HP the way D&D Beyond does.
+ *
+ * If the player set a manual override on DDB, that value IS the max and wins.
+ * Otherwise:
+ *
+ *   max = baseHitPoints                       (HP from hit dice)
+ *       + bonusHitPoints                      (flat bonuses, e.g. items)
+ *       + (constitutionModifier) * totalLevel (the big one DDB stores separately)
+ *       + (perLevelHpBonus)       * totalLevel (feats/traits like Tough, Hill Dwarf)
+ *
+ * This is the piece that was previously missing: `baseHitPoints` is hit-dice
+ * only, so without the CON term the max read low by (CON modifier x level).
+ *
+ * Remaining edge cases (rare): per-level bonuses tied to a single class on a
+ * multiclassed character (e.g. Draconic Bloodline counts sorcerer levels only)
+ * are applied across the full level total here, which can be slightly high.
+ */
+function computeMaxHP(data: DdbCharacterData): MaxHpBreakdown {
+    const base = toNumber(data.baseHitPoints);
+    const bonus = toNumber(data.bonusHitPoints);
+    const totalLevel = getTotalLevel(data);
+    const conMod = abilityModifier(getConstitutionScore(data));
+    const perLevelHp = getPerLevelHpBonus(data);
+
+    if (data.overrideHitPoints != null) {
+        const override = toNumber(data.overrideHitPoints);
+        return {
+            maxHP: override,
+            base,
+            bonus,
+            conMod,
+            totalLevel,
+            perLevelHp,
+            override
+        };
+    }
+
+    const maxHP = base + bonus + (conMod + perLevelHp) * totalLevel;
+    return { maxHP, base, bonus, conMod, totalLevel, perLevelHp, override: null };
+}
+
+/** D&D's standard ability modifier: floor((score - 10) / 2). */
+function abilityModifier(score: number): number {
+    return Math.floor((score - 10) / 2);
+}
+
+/**
+ * Work out the character's true Constitution score.
+ *
+ * DDB keeps the base score in `stats` and applies racial bonuses, ASIs, feats
+ * and items as separate `modifiers` — so we have to add those in by hand. A
+ * manual override on the sheet, if present, replaces the whole calculation.
+ */
+function getConstitutionScore(data: DdbCharacterData): number {
+    const override = findStatValue(data.overrideStats, CONSTITUTION_STAT_ID);
+    if (override != null) return override;
+
+    // Base score (default 10 if somehow absent) plus the legacy flat-bonus column.
+    let score =
+        (toNumber(findStatValue(data.stats, CONSTITUTION_STAT_ID)) || 10) +
+        toNumber(findStatValue(data.bonusStats, CONSTITUTION_STAT_ID));
+
+    // Fold in modifier-based bonuses (e.g. racial +2 CON) and any "set" effects
+    // (e.g. an Amulet of Health setting CON to 19 — we take whichever is higher).
+    let setScore: number | null = null;
+    for (const mod of allModifiers(data)) {
+        if (mod.subType !== "constitution-score") continue;
+        if (mod.type === "bonus") {
+            score += toNumber(mod.value);
+        } else if (mod.type === "set" && mod.value != null) {
+            setScore = setScore == null ? mod.value : Math.max(setScore, mod.value);
+        }
+    }
+    if (setScore != null) score = Math.max(score, setScore);
+
+    return score;
+}
+
+/** Sum of all class levels = the character's total level. */
+function getTotalLevel(data: DdbCharacterData): number {
+    if (!Array.isArray(data.classes)) return 0;
+    return data.classes.reduce((sum, c) => sum + toNumber(c.level), 0);
+}
+
+/**
+ * Total of all "extra HP per level" modifiers (Tough = +2, Hill Dwarf = +1, etc.).
+ * Each is multiplied by total level back in computeMaxHP.
+ */
+function getPerLevelHpBonus(data: DdbCharacterData): number {
+    let sum = 0;
+    for (const mod of allModifiers(data)) {
+        if (mod.subType === "hit-points-per-level") sum += toNumber(mod.value);
+    }
+    return sum;
+}
+
+/** Flatten DDB's source-grouped modifiers (race/class/feat/item/...) into one list. */
+function allModifiers(data: DdbCharacterData): DdbModifier[] {
+    if (!data.modifiers) return [];
+    return Object.values(data.modifiers)
+        .flat()
+        .filter((m): m is DdbModifier => !!m);
+}
+
+/** Pull a single ability score's value out of one of the stat arrays. */
+function findStatValue(
+    stats: DdbStat[] | undefined,
+    id: number
+): number | null {
+    const stat = stats?.find((s) => s.id === id);
+    return stat ? stat.value : null;
+}
+
+/**
+ * Coerce a possibly-null/undefined field into a usable number. DDB uses null for
+ * "not set" on several fields, so default those to 0 rather than letting NaN
+ * leak into the arithmetic.
+ */
+function toNumber(value: number | null | undefined): number {
+    return typeof value === "number" && !isNaN(value) ? value : 0;
+}

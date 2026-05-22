@@ -32,6 +32,8 @@ import PlayerView from "./tracker/player-view";
 import { tracker } from "./tracker/stores/tracker";
 import { EncounterSuggester } from "./encounter/editor-suggestor";
 import { API } from "./api/api";
+// TEMP DEBUG: remove together with the "debug-fetch-ddb-hp" command below.
+import { fetchDndBeyondHP } from "./integrations/dndbeyond";
 import {
     AmountModal,
     ConditionPickModal,
@@ -495,6 +497,37 @@ export default class InitiativeTracker extends Plugin {
     }
 
     addCommands() {
+        // TEMP DEBUG: verifies the D&D Beyond HP fetcher end-to-end. Remove this
+        // whole command (and the fetchDndBeyondHP import above) once confirmed.
+        this.addCommand({
+            id: "debug-fetch-ddb-hp",
+            name: "DEBUG: Fetch D&D Beyond HP (hardcoded ID)",
+            callback: async () => {
+                const characterId = 139556156;
+                new Notice(
+                    `Fetching HP for D&D Beyond character ${characterId}…`
+                );
+                try {
+                    const hp = await fetchDndBeyondHP(characterId, true);
+                    new Notice(
+                        `DDB ${characterId} → Current: ${hp.currentHP} / Max: ${hp.maxHP} / Temp: ${hp.tempHP}`,
+                        10000
+                    );
+                    console.log("[initiative-tracker] DDB debug fetch", hp);
+                } catch (e) {
+                    new Notice(
+                        `DDB fetch failed: ${
+                            e instanceof Error ? e.message : String(e)
+                        }`,
+                        10000
+                    );
+                    console.error(
+                        "[initiative-tracker] DDB debug fetch failed",
+                        e
+                    );
+                }
+            }
+        });
         this.addCommand({
             id: "open-tracker",
             name: "Open Initiative Tracker",
