@@ -54,6 +54,7 @@ export interface HomebrewCreature {
     bandId?: string | null;
     target?: boolean;
     outOfTurnActor?: boolean;
+    ddbCharacterId?: number;
 }
 export type Condition = {
     name: string;

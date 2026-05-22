@@ -1136,7 +1136,8 @@ class NewPlayerModal extends Modal {
         let nameInput: InputValidate,
             levelInput: InputValidate,
             hpInput: InputValidate,
-            modInput: InputValidate;
+            modInput: InputValidate,
+            ddbInput: InputValidate;
 
         new Setting(contentEl)
             .setName("Name")
@@ -1228,6 +1229,45 @@ class NewPlayerModal extends Modal {
                     this.player.modifier = Number(v);
                 });
             });
+        new Setting(contentEl)
+            .setName("D&D Beyond Character ID")
+            .setDesc(
+                "Optional. The numeric character ID from your D&D Beyond character sheet URL."
+            )
+            .addText((t) => {
+                ddbInput = {
+                    input: t.inputEl,
+                    validate: (i) => {
+                        const value = i.value.trim();
+                        if (!value.length) return false;
+                        let error = false;
+                        const num = Number(value);
+                        if (!Number.isInteger(num) || num < 0) {
+                            i.addClass("has-error");
+                            error = true;
+                        }
+                        return error;
+                    }
+                };
+                t.inputEl.type = "number";
+                t.setValue(
+                    this.player.ddbCharacterId != null
+                        ? `${this.player.ddbCharacterId}`
+                        : ""
+                );
+                t.onChange((v) => {
+                    t.inputEl.removeClass("has-error");
+                    const value = v.trim();
+                    if (!value.length) {
+                        delete this.player.ddbCharacterId;
+                        return;
+                    }
+                    const num = Number(value);
+                    if (Number.isInteger(num) && num >= 0) {
+                        this.player.ddbCharacterId = num;
+                    }
+                });
+            });
 
         let footerEl = contentEl.createDiv();
         let footerButtons = new Setting(footerEl);
@@ -1238,7 +1278,8 @@ class NewPlayerModal extends Modal {
                     let error = this.validateInputs(
                         nameInput,
                         hpInput,
-                        modInput
+                        modInput,
+                        ddbInput
                     );
                     if (error) {
                         new Notice("Fix errors before saving.");
@@ -1259,7 +1300,7 @@ class NewPlayerModal extends Modal {
             return b;
         });
 
-        this.validateInputs(nameInput, hpInput, modInput);
+        this.validateInputs(nameInput, hpInput, modInput, ddbInput);
     }
     validateInputs(...inputs: InputValidate[]) {
         let error = false;
