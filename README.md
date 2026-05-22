@@ -41,6 +41,10 @@ Creatures who act as a unit can be grouped into a *band*. Adjacent rows in the i
 
 The Player View now scales font-size and portrait dimensions to fill the available height. Fewer combatants render larger; more combatants render smaller. When the list won't fit even at the minimum readable size (16px), the view scrolls and auto-centers on the active row whenever the turn changes — useful for projection displays the GM doesn't see directly.
 
+### Optional Statuses column
+
+A new setting, **Display Statuses Column in Player View**, hides the statuses (conditions) column from the Player View when you don't want active effects visible to players.
+
 ### Quickstart
 
 - Install the Initiative Tracker plugin in Obsidian.
