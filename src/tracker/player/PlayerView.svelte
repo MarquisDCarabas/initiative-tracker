@@ -98,7 +98,7 @@
     // readable floor, the container scrolls and the active row auto-scrolls
     // into view.
     const MIN_FONT_PX = 16;
-    const MAX_FONT_PX = 160;
+    const MAX_FONT_PX = 32;
     // Initial guess; refined by measuring actual row height after first paint.
     const ROW_TO_FONT_INITIAL = 2.2;
 
@@ -198,12 +198,12 @@
 <table class="initiative-tracker-table" transition:fade bind:this={tableEl}>
     <thead class="tracker-table-header" use:measureHeader>
         {#if showInitiative}
-            <th style="width:5%"><strong use:iniIcon /></th>
+            <th class="center"><strong use:iniIcon /></th>
         {/if}
         <th style="width:8px" />
         <th class="portrait-col" />
-        <th class="left" style="width:25%"><strong>Name</strong></th>
-        <th style="width:15%" class="center"><strong use:hpIcon /></th>
+        <th class="left name-col"><strong>Name</strong></th>
+        <th class="center hp-col"><strong use:hpIcon /></th>
         {#if showStatuses}
             <th><strong> Statuses </strong></th>
         {/if}
@@ -233,19 +233,21 @@
                 <td class="portrait-cell">
                     <Portrait {creature} />
                 </td>
-                <td class='name'>
-                    {#if creature.friendly}
-                        <div
-                            class="contains-icon"
-                            use:friendIcon
-                            aria-label={`This creature is an ally.`}
-                        />
-                    {/if}
-                    {name(creature)}
+                <td class="name-cell name-col">
+                    <div class="name">
+                        {#if creature.friendly}
+                            <div
+                                class="contains-icon"
+                                use:friendIcon
+                                aria-label={`This creature is an ally.`}
+                            />
+                        {/if}
+                        {name(creature)}
+                    </div>
                 </td>
                 <td
                     class:center={true}
-                    class={getHpStatus(creature.hp, creature.max).toLowerCase()}
+                    class="hp-col {getHpStatus(creature.hp, creature.max).toLowerCase()}"
                 >
                     {#if creature.player && $data.diplayPlayerHPValues}
                         <div class="center">{@html creature.hpDisplay}</div>
@@ -284,7 +286,7 @@
         overflow-y: auto;
     }
     .portrait-col {
-        width: 2.5em;
+        width: 2em;
     }
     .initiative-tracker-table {
         padding: 0.5rem;
@@ -292,7 +294,7 @@
         gap: 0.25rem 0.5rem;
         width: 100%;
         margin-left: 0rem;
-        table-layout: fixed;
+        table-layout: auto;
         border-collapse: separate;
         border-spacing: 0 2px;
         font-size: inherit;
@@ -300,17 +302,29 @@
     .left {
         text-align: left;
     }
+    .name-cell {
+        text-align: left;
+        white-space: nowrap;
+    }
+    .name-col {
+        width: 100%;
+        padding-left: 0.4em;
+    }
     .name, .name > :global(svg) {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
+    .hp-col {
+        white-space: nowrap;
+    }
     .center {
         text-align: center;
     }
     .portrait-cell {
-        padding: 0 0.25rem;
+        padding: 0;
         vertical-align: middle;
+        text-align: center;
     }
     .healthy {
         color: var(--text-success);
