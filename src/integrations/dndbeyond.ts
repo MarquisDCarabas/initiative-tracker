@@ -88,31 +88,16 @@ interface DdbCharacterResponse {
     data: DdbCharacterData | null;
 }
 
-/** A fully itemized max-HP calculation, handy for the debug command's logging. */
-interface MaxHpBreakdown {
-    maxHP: number;
-    base: number;
-    bonus: number;
-    conMod: number;
-    totalLevel: number;
-    perLevelHp: number;
-    /** The override value if one was used, otherwise null. */
-    override: number | null;
-}
-
 /**
  * Fetch a D&D Beyond character's HP and reduce it to { currentHP, maxHP, tempHP }.
  *
  * @param characterId The numeric character ID (the number in a DDB sheet URL,
  *                     e.g. dndbeyond.com/characters/12345678 -> 12345678).
- * @param debug       When true, logs a full HP breakdown to the console. Used by
- *                    the temporary debug command; remove with it.
  * @throws If the ID is malformed, the character is private/missing, the network
  *         fails, or the response can't be understood — each with a clear message.
  */
 export async function fetchDndBeyondHP(
-    characterId: number | string,
-    debug = false
+    characterId: number | string
 ): Promise<DndBeyondHP> {
     // --- 1. Validate the ID up front so we never build a nonsense URL. ----------
     // DDB character IDs are positive integers; reject anything else early.
@@ -190,19 +175,11 @@ export async function fetchDndBeyondHP(
     const removed = toNumber(data.removedHitPoints);
     const tempHP = toNumber(data.temporaryHitPoints);
 
-    const max = computeMaxHP(data);
+    const maxHP = computeMaxHP(data);
     // Current HP is simply the max minus whatever damage has been logged on DDB.
-    const currentHP = max.maxHP - removed;
+    const currentHP = maxHP - removed;
 
-    if (debug) {
-        // Itemized so you can see exactly where the number comes from.
-        console.log(
-            `[initiative-tracker] DDB HP breakdown for character ${id}`,
-            { ...max, removed, tempHP, currentHP }
-        );
-    }
-
-    return { currentHP, maxHP: max.maxHP, tempHP };
+    return { currentHP, maxHP, tempHP };
 }
 
 /**
@@ -223,28 +200,17 @@ export async function fetchDndBeyondHP(
  * multiclassed character (e.g. Draconic Bloodline counts sorcerer levels only)
  * are applied across the full level total here, which can be slightly high.
  */
-function computeMaxHP(data: DdbCharacterData): MaxHpBreakdown {
+function computeMaxHP(data: DdbCharacterData): number {
+    // A manual override on the sheet IS the max and wins outright.
+    if (data.overrideHitPoints != null) {
+        return toNumber(data.overrideHitPoints);
+    }
     const base = toNumber(data.baseHitPoints);
     const bonus = toNumber(data.bonusHitPoints);
     const totalLevel = getTotalLevel(data);
     const conMod = abilityModifier(getConstitutionScore(data));
     const perLevelHp = getPerLevelHpBonus(data);
-
-    if (data.overrideHitPoints != null) {
-        const override = toNumber(data.overrideHitPoints);
-        return {
-            maxHP: override,
-            base,
-            bonus,
-            conMod,
-            totalLevel,
-            perLevelHp,
-            override
-        };
-    }
-
-    const maxHP = base + bonus + (conMod + perLevelHp) * totalLevel;
-    return { maxHP, base, bonus, conMod, totalLevel, perLevelHp, override: null };
+    return base + bonus + (conMod + perLevelHp) * totalLevel;
 }
 
 /** D&D's standard ability modifier: floor((score - 10) / 2). */

@@ -52,6 +52,7 @@ export class Creature {
     bandId: string | null = null;
     target: boolean = false;
     outOfTurnActor: boolean = false;
+    ddbCharacterId?: number;
     setModifier(modifier: number[] | number) {
         if (modifier) {
             if (Array.isArray(modifier)) {
@@ -113,6 +114,7 @@ export class Creature {
         this.bandId = (creature as HomebrewCreature).bandId ?? null;
         this.target = creature.target ?? false;
         this.outOfTurnActor = creature.outOfTurnActor ?? false;
+        this.ddbCharacterId = creature.ddbCharacterId;
         this.id = creature.id ?? getId();
         if ("statblock-link" in creature) {
             this["statblock-link"] = (creature as any)[
@@ -221,6 +223,7 @@ export class Creature {
         this.source = creature.source;
         this.token = creature.token ?? this.token;
         this.image = creature.image ?? this.image;
+        this.ddbCharacterId = creature.ddbCharacterId;
     }
 
     toProperties() {
@@ -260,7 +263,8 @@ export class Creature {
             image: this.image,
             bandId: this.bandId,
             target: this.target,
-            outOfTurnActor: this.outOfTurnActor
+            outOfTurnActor: this.outOfTurnActor,
+            ddbCharacterId: this.ddbCharacterId
         };
     }
 
@@ -295,6 +299,10 @@ export class Creature {
         }
         creature.status = new Set(statuses);
         creature.active = state.active;
+        // For players the ID comes from getPlayerByName above; only let saved
+        // state supply it (don't clobber with undefined from pre-field encounters).
+        creature.ddbCharacterId =
+            state.ddbCharacterId ?? creature.ddbCharacterId;
         return creature;
     }
 }

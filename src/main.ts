@@ -32,7 +32,6 @@ import PlayerView from "./tracker/player-view";
 import { tracker } from "./tracker/stores/tracker";
 import { EncounterSuggester } from "./encounter/editor-suggestor";
 import { API } from "./api/api";
-// TEMP DEBUG: remove together with the "debug-fetch-ddb-hp" command below.
 import { fetchDndBeyondHP } from "./integrations/dndbeyond";
 import {
     AmountModal,
@@ -259,6 +258,13 @@ export default class InitiativeTracker extends Plugin {
         });
 
         this.addCommands();
+
+        // Auto-sync HP from D&D Beyond while an encounter is running. The state
+        // store flips true on play and false on stop; we start/stop accordingly.
+        this.register(
+            tracker.state.subscribe(() => this.refreshDdbAutoSync())
+        );
+        this.register(() => this.stopDdbAutoSync());
         this.addEvents();
 
         this.registerEditorSuggest(new EncounterSuggester(this));
@@ -497,37 +503,6 @@ export default class InitiativeTracker extends Plugin {
     }
 
     addCommands() {
-        // TEMP DEBUG: verifies the D&D Beyond HP fetcher end-to-end. Remove this
-        // whole command (and the fetchDndBeyondHP import above) once confirmed.
-        this.addCommand({
-            id: "debug-fetch-ddb-hp",
-            name: "DEBUG: Fetch D&D Beyond HP (hardcoded ID)",
-            callback: async () => {
-                const characterId = 139556156;
-                new Notice(
-                    `Fetching HP for D&D Beyond character ${characterId}…`
-                );
-                try {
-                    const hp = await fetchDndBeyondHP(characterId, true);
-                    new Notice(
-                        `DDB ${characterId} → Current: ${hp.currentHP} / Max: ${hp.maxHP} / Temp: ${hp.tempHP}`,
-                        10000
-                    );
-                    console.log("[initiative-tracker] DDB debug fetch", hp);
-                } catch (e) {
-                    new Notice(
-                        `DDB fetch failed: ${
-                            e instanceof Error ? e.message : String(e)
-                        }`,
-                        10000
-                    );
-                    console.error(
-                        "[initiative-tracker] DDB debug fetch failed",
-                        e
-                    );
-                }
-            }
-        });
         this.addCommand({
             id: "open-tracker",
             name: "Open Initiative Tracker",
@@ -950,6 +925,75 @@ export default class InitiativeTracker extends Plugin {
     async saveSettings() {
         await this.saveData(this.data);
         tracker.setData(this.data);
+    }
+
+    private ddbTimer: number | null = null;
+    private ddbSyncing = false;
+    /** Start or stop the auto-sync timer to match the current encounter + setting. */
+    refreshDdbAutoSync() {
+        if (this.data.ddbAutoSync && tracker.getState()) {
+            // Don't reset a running timer on unrelated state notifications.
+            if (this.ddbTimer == null) this.startDdbAutoSync();
+        } else {
+            this.stopDdbAutoSync();
+        }
+    }
+    private startDdbAutoSync() {
+        this.stopDdbAutoSync();
+        // Clamp to the documented 5–300s range in case data.json was hand-edited.
+        const seconds = Math.min(
+            300,
+            Math.max(5, Number(this.data.ddbSyncInterval) || 15)
+        );
+        this.ddbTimer = window.setInterval(() => {
+            this.syncDdbForEncounter();
+        }, seconds * 1000);
+        // Sync once right away so HP is fresh the moment combat starts, rather
+        // than waiting a full interval for the first refresh.
+        this.syncDdbForEncounter();
+    }
+    private stopDdbAutoSync() {
+        if (this.ddbTimer != null) {
+            window.clearInterval(this.ddbTimer);
+            this.ddbTimer = null;
+        }
+    }
+    /** One sync pass: fetch + apply HP for every combatant that has a DDB id. */
+    private async syncDdbForEncounter() {
+        if (this.ddbSyncing) return; // skip if a previous pass is still running
+        const combatants = tracker
+            .getOrderedCreatures()
+            .filter((c) => c.ddbCharacterId != null);
+        if (!combatants.length) return;
+        this.ddbSyncing = true;
+        try {
+            await Promise.all(
+                combatants.map(async (creature) => {
+                    try {
+                        const hp = await fetchDndBeyondHP(
+                            creature.ddbCharacterId
+                        );
+                        tracker.updateCreatures({
+                            creature,
+                            change: {
+                                set_hp: hp.currentHP,
+                                set_max_hp: hp.maxHP,
+                                set_temp: hp.tempHP
+                            }
+                        });
+                    } catch (e) {
+                        // Don't spam a Notice every interval; log quietly and
+                        // leave this combatant's HP unchanged.
+                        console.error(
+                            `[initiative-tracker] DDB auto-sync failed for ${creature.name}`,
+                            e
+                        );
+                    }
+                })
+            );
+        } finally {
+            this.ddbSyncing = false;
+        }
     }
     private getActiveCombatant(): CreatureView | undefined {
         if (

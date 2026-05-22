@@ -50,6 +50,8 @@ export interface InitiativeTrackerData {
     version: number[];
 
     rollPlayerInitiatives: RollPlayerInitiativeBehavior;
+    ddbAutoSync: boolean;
+    ddbSyncInterval: number;
 }
 export interface InputValidate {
     input: HTMLInputElement;

@@ -374,6 +374,34 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     this.plugin.saveSettings();
                 });
             });
+        new Setting(additionalContainer)
+            .setName("Auto-sync HP from D&D Beyond during encounters")
+            .setDesc(
+                "While an encounter is running, periodically pull HP from D&D Beyond for combatants that have a character ID."
+            )
+            .addToggle((t) => {
+                t.setValue(this.plugin.data.ddbAutoSync ?? true).onChange(
+                    async (v) => {
+                        this.plugin.data.ddbAutoSync = v;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshDdbAutoSync();
+                    }
+                );
+            });
+        new Setting(additionalContainer)
+            .setName("DDB sync interval (seconds)")
+            .setDesc(
+                "How often to refresh HP during an encounter (5–300). Takes effect the next time an encounter is started."
+            )
+            .addSlider((s) => {
+                s.setLimits(5, 300, 1)
+                    .setDynamicTooltip()
+                    .setValue(this.plugin.data.ddbSyncInterval ?? 15)
+                    .onChange(async (v) => {
+                        this.plugin.data.ddbSyncInterval = v;
+                        await this.plugin.saveSettings();
+                    });
+            });
     }
     private _displayPlayers(additionalContainer: HTMLDetailsElement) {
         additionalContainer.empty();

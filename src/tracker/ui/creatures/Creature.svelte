@@ -5,8 +5,9 @@
     import CreatureControls from "./CreatureControls.svelte";
     import Status from "./Status.svelte";
     import Portrait from "./Portrait.svelte";
-    import { Platform, setIcon } from "obsidian";
+    import { Platform, setIcon, Notice } from "obsidian";
     import { tracker } from "../../stores/tracker";
+    import { fetchDndBeyondHP } from "src/integrations/dndbeyond";
     import { createEventDispatcher } from "svelte";
 
     const dispatch = createEventDispatcher();
@@ -29,6 +30,41 @@
     };
     const friendlyIcon = (div: HTMLElement) => {
         setIcon(div, FRIENDLY);
+    };
+
+    // D&D Beyond HP refresh: only meaningful for combatants that carry a DDB id.
+    let ddbLoading = false;
+    const ddbIcon = (div: HTMLElement) => {
+        setIcon(div, "refresh-cw");
+    };
+    const ddbLinkIcon = (div: HTMLElement) => {
+        setIcon(div, "link-2");
+    };
+    const refreshFromDDB = async () => {
+        if (ddbLoading || creature.ddbCharacterId == null) return;
+        ddbLoading = true;
+        try {
+            const hp = await fetchDndBeyondHP(creature.ddbCharacterId);
+            // Absolute sets so the tracker mirrors D&D Beyond exactly.
+            tracker.updateCreatures({
+                creature,
+                change: {
+                    set_hp: hp.currentHP,
+                    set_max_hp: hp.maxHP,
+                    set_temp: hp.tempHP
+                }
+            });
+        } catch (e) {
+            // Leave HP untouched; just surface a brief error.
+            new Notice(
+                `D&D Beyond sync failed for ${creature.name}: ${
+                    e instanceof Error ? e.message : String(e)
+                }`,
+                6000
+            );
+        } finally {
+            ddbLoading = false;
+        }
     };
 
     const hoverParent: { hoverPopover: null } = { hoverPopover: null };
@@ -133,8 +169,29 @@
         tracker.setUpdate(creature, evt);
     }}
 >
-    <div>
-        {@html creature.hpDisplay}
+    <div class="hp-cell">
+        <div>
+            {@html creature.hpDisplay}
+        </div>
+        {#if creature.ddbCharacterId != null}
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <div
+                class="ddb-linked"
+                aria-label={`D&D Beyond ID: ${creature.ddbCharacterId}`}
+                use:ddbLinkIcon
+                on:click|stopPropagation
+            />
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <div
+                class="ddb-refresh"
+                class:spinning={ddbLoading}
+                aria-label={ddbLoading
+                    ? "Syncing HP from D&D Beyond…"
+                    : "Refresh HP from D&D Beyond"}
+                use:ddbIcon
+                on:click|stopPropagation={refreshFromDDB}
+            />
+        {/if}
     </div>
 </td>
 
@@ -227,5 +284,44 @@
     }
     .mobile {
         font-size: smaller;
+    }
+    .hp-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    .ddb-refresh {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        color: var(--text-muted);
+    }
+    .ddb-refresh:hover {
+        color: var(--text-normal);
+    }
+    .ddb-linked {
+        display: flex;
+        align-items: center;
+        color: var(--text-accent);
+    }
+    .ddb-linked :global(svg) {
+        width: 13px;
+        height: 13px;
+    }
+    .ddb-refresh :global(svg) {
+        width: 14px;
+        height: 14px;
+    }
+    .spinning :global(svg) {
+        animation: ddb-spin 0.8s linear infinite;
+    }
+    @keyframes ddb-spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
     }
 </style>

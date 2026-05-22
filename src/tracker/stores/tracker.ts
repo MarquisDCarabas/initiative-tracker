@@ -47,6 +47,7 @@ type CreatureUpdate = {
     //this is so dirty
     set_hp?: number;
     set_max_hp?: number;
+    set_temp?: number;
 };
 type CreatureUpdates = { creature: Creature; change: CreatureUpdate };
 const modifier = Platform.isMacOS ? "Meta" : "Control";
@@ -279,11 +280,14 @@ function createTracker() {
                     creature.hp = creature.current_max;
                 }
             }
-            if (change.set_hp) {
+            if (change.set_hp != null) {
                 creature.hp = change.set_hp;
             }
-            if (change.set_max_hp) {
+            if (change.set_max_hp != null) {
                 creature.current_max = creature.max = change.set_max_hp;
+            }
+            if (change.set_temp != null) {
+                creature.temp = change.set_temp;
             }
             if (change.ac) {
                 creature.current_ac = creature.ac = change.ac;
@@ -1466,11 +1470,14 @@ class Tracker {
                     creature.hp = creature.current_max;
                 }
             }
-            if (change.set_hp) {
+            if (change.set_hp != null) {
                 creature.hp = change.set_hp;
             }
-            if (change.set_max_hp) {
+            if (change.set_max_hp != null) {
                 creature.current_max = creature.max = change.set_max_hp;
+            }
+            if (change.set_temp != null) {
+                creature.temp = change.set_temp;
             }
             if (change.ac) {
                 creature.current_ac = creature.ac = change.ac;
