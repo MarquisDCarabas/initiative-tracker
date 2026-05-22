@@ -43,6 +43,7 @@ export interface InitiativeTrackerData {
     useLegacy: boolean;
     diplayPlayerHPValues: boolean;
     displayPlayerInitiative: boolean;
+    displayPlayerStatuses: boolean;
     rollHP: boolean;
     builder: BuilderState;
     descending: boolean;

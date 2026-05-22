@@ -48,6 +48,7 @@
 
     $: activeAndVisible = $ordered.filter((c) => c.enabled && !c.hidden);
     $: showInitiative = $data?.displayPlayerInitiative ?? true;
+    $: showStatuses = $data?.displayPlayerStatuses ?? true;
     $: activeCreature = $ordered.find((c) => c.active);
     $: visibleBandStripes = (() => {
         const map = new Map<string, string>();
@@ -203,7 +204,9 @@
         <th class="portrait-col" />
         <th class="left" style="width:25%"><strong>Name</strong></th>
         <th style="width:15%" class="center"><strong use:hpIcon /></th>
-        <th><strong> Statuses </strong></th>
+        {#if showStatuses}
+            <th><strong> Statuses </strong></th>
+        {/if}
     </thead>
     <tbody>
         {#each activeAndVisible as creature (creature.id)}
@@ -250,9 +253,11 @@
                         <span>{getHpStatus(creature.hp, creature.max)}</span>
                     {/if}
                 </td>
-                <td class="center">
-                    {[...creature.status].map((s) => s.name).join(", ")}
-                </td>
+                {#if showStatuses}
+                    <td class="center">
+                        {[...creature.status].map((s) => s.name).join(", ")}
+                    </td>
+                {/if}
             </tr>
         {/each}
     </tbody>

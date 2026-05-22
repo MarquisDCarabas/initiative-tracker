@@ -75,6 +75,7 @@ export const DEFAULT_SETTINGS: InitiativeTrackerData = {
     useLegacy: false,
     diplayPlayerHPValues: true,
     displayPlayerInitiative: true,
+    displayPlayerStatuses: true,
     rollHP: false,
     descending: true,
     builder: {

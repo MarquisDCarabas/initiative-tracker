@@ -271,6 +271,19 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 });
             });
         new Setting(additionalContainer)
+            .setName("Display Statuses Column in Player View")
+            .setDesc(
+                "If turned off, the statuses column is hidden from players."
+            )
+            .addToggle((t) => {
+                t.setValue(
+                    this.plugin.data.displayPlayerStatuses ?? true
+                ).onChange(async (v) => {
+                    this.plugin.data.displayPlayerStatuses = v;
+                    await this.plugin.saveSettings();
+                });
+            });
+        new Setting(additionalContainer)
             .setName("Roll HP for Creatures")
             .setDesc(
                 createFragment((e) => {
