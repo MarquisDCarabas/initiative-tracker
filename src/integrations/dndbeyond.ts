@@ -15,6 +15,9 @@ const DDB_CHARACTER_ENDPOINT =
 /** Ability scores are stored in a fixed array; Constitution is id 3. */
 const CONSTITUTION_STAT_ID = 3;
 
+/** Abandon a request that hasn't responded in this long (requestUrl can hang). */
+const REQUEST_TIMEOUT_MS = 10000;
+
 /** The three numbers the rest of the plugin actually cares about. */
 export interface DndBeyondHP {
     /** Current hit points = max HP minus damage already taken. */
@@ -121,7 +124,10 @@ export async function fetchDndBeyondHP(
     // rejects the promise, which we catch and rewrap below.
     let response;
     try {
-        response = await requestUrl({ url, method: "GET", throw: false });
+        response = await withTimeout(
+            requestUrl({ url, method: "GET", throw: false }),
+            REQUEST_TIMEOUT_MS
+        );
     } catch (e) {
         const detail = e instanceof Error ? e.message : String(e);
         throw new Error(
@@ -176,6 +182,16 @@ export async function fetchDndBeyondHP(
     const tempHP = toNumber(data.temporaryHitPoints);
 
     const maxHP = computeMaxHP(data);
+    // Guard against partial/garbage payloads (valid JSON, but empty/incomplete
+    // character data). A real character always has a positive maximum, so a 0
+    // here means the response was incomplete — refuse it rather than zeroing the
+    // combatant. Callers leave HP unchanged when this throws.
+    if (maxHP <= 0) {
+        throw new Error(
+            `D&D Beyond returned incomplete data for character ${id} ` +
+                `(computed a max HP of ${maxHP}). Leaving HP unchanged.`
+        );
+    }
     // Current HP is simply the max minus whatever damage has been logged on DDB.
     const currentHP = maxHP - removed;
 
@@ -292,4 +308,29 @@ function findStatValue(
  */
 function toNumber(value: number | null | undefined): number {
     return typeof value === "number" && !isNaN(value) ? value : 0;
+}
+
+/**
+ * Reject if a promise doesn't settle within `ms`. requestUrl has no timeout of
+ * its own, so a hung connection would otherwise stall the auto-sync loop
+ * forever — its re-entrancy guard would never release and ticks would be skipped
+ * indefinitely. A rejection here flows into the normal error handling instead.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(
+            () => reject(new Error(`timed out after ${ms / 1000}s`)),
+            ms
+        );
+        promise.then(
+            (value) => {
+                clearTimeout(timer);
+                resolve(value);
+            },
+            (err) => {
+                clearTimeout(timer);
+                reject(err);
+            }
+        );
+    });
 }
