@@ -322,7 +322,7 @@
         text-align: center;
     }
     .portrait-cell {
-        padding: 0;
+        padding: 0 0 0 0.4em;
         vertical-align: middle;
         text-align: center;
     }
