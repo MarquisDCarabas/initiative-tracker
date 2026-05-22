@@ -55,6 +55,7 @@ export interface HomebrewCreature {
     target?: boolean;
     outOfTurnActor?: boolean;
     ddbCharacterId?: number;
+    ddbExtraName?: string;
 }
 export type Condition = {
     name: string;

@@ -53,6 +53,7 @@ export class Creature {
     target: boolean = false;
     outOfTurnActor: boolean = false;
     ddbCharacterId?: number;
+    ddbExtraName?: string;
     setModifier(modifier: number[] | number) {
         if (modifier) {
             if (Array.isArray(modifier)) {
@@ -115,6 +116,7 @@ export class Creature {
         this.target = creature.target ?? false;
         this.outOfTurnActor = creature.outOfTurnActor ?? false;
         this.ddbCharacterId = creature.ddbCharacterId;
+        this.ddbExtraName = creature.ddbExtraName;
         this.id = creature.id ?? getId();
         if ("statblock-link" in creature) {
             this["statblock-link"] = (creature as any)[
@@ -224,6 +226,7 @@ export class Creature {
         this.token = creature.token ?? this.token;
         this.image = creature.image ?? this.image;
         this.ddbCharacterId = creature.ddbCharacterId;
+        this.ddbExtraName = creature.ddbExtraName;
     }
 
     toProperties() {
@@ -264,7 +267,8 @@ export class Creature {
             bandId: this.bandId,
             target: this.target,
             outOfTurnActor: this.outOfTurnActor,
-            ddbCharacterId: this.ddbCharacterId
+            ddbCharacterId: this.ddbCharacterId,
+            ddbExtraName: this.ddbExtraName
         };
     }
 
@@ -303,6 +307,7 @@ export class Creature {
         // state supply it (don't clobber with undefined from pre-field encounters).
         creature.ddbCharacterId =
             state.ddbCharacterId ?? creature.ddbCharacterId;
+        creature.ddbExtraName = state.ddbExtraName ?? creature.ddbExtraName;
         return creature;
     }
 }

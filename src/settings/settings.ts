@@ -1296,6 +1296,22 @@ class NewPlayerModal extends Modal {
                     }
                 });
             });
+        new Setting(contentEl)
+            .setName("D&D Beyond Extra / Pet Name")
+            .setDesc(
+                'Optional. If this combatant is a pet/familiar/mount from the above character\'s Extras tab, enter its name — a partial match is fine (e.g. "Vengeance"). Leave blank for a normal character.'
+            )
+            .addText((t) => {
+                t.setValue(this.player.ddbExtraName ?? "");
+                t.onChange((v) => {
+                    const value = v.trim();
+                    if (value.length) {
+                        this.player.ddbExtraName = value;
+                    } else {
+                        delete this.player.ddbExtraName;
+                    }
+                });
+            });
 
         let footerEl = contentEl.createDiv();
         let footerButtons = new Setting(footerEl);

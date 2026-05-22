@@ -82,6 +82,28 @@ interface DdbCharacterData {
      * Racial CON bonuses, ASIs, feats and items all live here — NOT in `stats`.
      */
     modifiers: { [group: string]: DdbModifier[] };
+    /**
+     * The "Extras" tab — pets/familiars/mounts/companions the character controls.
+     * Each carries its statblock under `definition` and its own live HP state.
+     */
+    creatures?: DdbExtraCreature[];
+}
+
+/**
+ * One entry from the "Extras" tab. The pet's live HP is top-level
+ * (removedHitPoints / temporaryHitPoints); its MAXIMUM is the statblock's
+ * `averageHitPoints` under `definition` (there is no `hitPoints` field). The
+ * top-level `name` is a custom override and is often null, so fall back to
+ * `definition.name` when matching.
+ */
+interface DdbExtraCreature {
+    name: string | null;
+    removedHitPoints: number;
+    temporaryHitPoints: number;
+    definition: {
+        name: string;
+        averageHitPoints: number;
+    } | null;
 }
 
 /** The envelope the endpoint wraps every character in. */
@@ -96,11 +118,17 @@ interface DdbCharacterResponse {
  *
  * @param characterId The numeric character ID (the number in a DDB sheet URL,
  *                     e.g. dndbeyond.com/characters/12345678 -> 12345678).
- * @throws If the ID is malformed, the character is private/missing, the network
- *         fails, or the response can't be understood — each with a clear message.
+ * @param extraName   Optional. When set, returns the HP of the matching creature
+ *                    from this character's "Extras" tab (pet/familiar/mount)
+ *                    instead of the character's own HP. Matched by case-insensitive
+ *                    substring against the creature's name.
+ * @throws If the ID is malformed, the character is private/missing, the named
+ *         Extra isn't found, the network fails, or the response can't be
+ *         understood — each with a clear message.
  */
 export async function fetchDndBeyondHP(
-    characterId: number | string
+    characterId: number | string,
+    extraName?: string
 ): Promise<DndBeyondHP> {
     // --- 1. Validate the ID up front so we never build a nonsense URL. ----------
     // DDB character IDs are positive integers; reject anything else early.
@@ -178,6 +206,13 @@ export async function fetchDndBeyondHP(
 
     // --- 5. Reduce the raw HP fields to the three numbers we want. -------------
     const data = payload.data;
+
+    // If an Extra (pet/familiar/mount) was named, read that creature's HP from
+    // the "Extras" tab instead of the character's own HP.
+    if (extraName != null && extraName.trim().length > 0) {
+        return extractExtraHP(data, extraName, id);
+    }
+
     const removed = toNumber(data.removedHitPoints);
     const tempHP = toNumber(data.temporaryHitPoints);
 
@@ -195,6 +230,44 @@ export async function fetchDndBeyondHP(
     // Current HP is simply the max minus whatever damage has been logged on DDB.
     const currentHP = maxHP - removed;
 
+    return { currentHP, maxHP, tempHP };
+}
+
+/**
+ * Extract one Extra's (pet/familiar/mount) HP from the character payload.
+ *
+ * Matched by case-insensitive substring against the creature's custom name or,
+ * when that's null, its statblock name — so "Vengeance" matches
+ * "Vengeance (7th Level)" and keeps matching after the character levels up.
+ * Max HP is the statblock's `averageHitPoints` (no Con math — it's a monster);
+ * current = max - removedHitPoints; temp = temporaryHitPoints.
+ */
+function extractExtraHP(
+    data: DdbCharacterData,
+    extraName: string,
+    characterId: string
+): DndBeyondHP {
+    const creatures = Array.isArray(data.creatures) ? data.creatures : [];
+    const needle = extraName.trim().toLowerCase();
+    const match = creatures.find((c) =>
+        (c?.name ?? c?.definition?.name ?? "").toLowerCase().includes(needle)
+    );
+    if (!match) {
+        throw new Error(
+            `D&D Beyond character ${characterId} has no Extra matching ` +
+                `"${extraName}". Check the name (a partial match is fine) and ` +
+                `that the creature is on the character's Extras tab.`
+        );
+    }
+    const maxHP = toNumber(match.definition?.averageHitPoints);
+    if (maxHP <= 0) {
+        throw new Error(
+            `D&D Beyond Extra "${extraName}" returned incomplete HP data ` +
+                `(max HP ${maxHP}). Leaving HP unchanged.`
+        );
+    }
+    const currentHP = maxHP - toNumber(match.removedHitPoints);
+    const tempHP = toNumber(match.temporaryHitPoints);
     return { currentHP, maxHP, tempHP };
 }
 

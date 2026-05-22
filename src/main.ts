@@ -971,7 +971,8 @@ export default class InitiativeTracker extends Plugin {
                 combatants.map(async (creature) => {
                     try {
                         const hp = await fetchDndBeyondHP(
-                            creature.ddbCharacterId
+                            creature.ddbCharacterId,
+                            creature.ddbExtraName
                         );
                         tracker.updateCreatures({
                             creature,

@@ -44,7 +44,10 @@
         if (ddbLoading || creature.ddbCharacterId == null) return;
         ddbLoading = true;
         try {
-            const hp = await fetchDndBeyondHP(creature.ddbCharacterId);
+            const hp = await fetchDndBeyondHP(
+                creature.ddbCharacterId,
+                creature.ddbExtraName
+            );
             // Absolute sets so the tracker mirrors D&D Beyond exactly.
             tracker.updateCreatures({
                 creature,
@@ -177,7 +180,9 @@
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <div
                 class="ddb-linked"
-                aria-label={`D&D Beyond ID: ${creature.ddbCharacterId}`}
+                aria-label={creature.ddbExtraName
+                    ? `D&D Beyond: ${creature.ddbExtraName} (char ${creature.ddbCharacterId})`
+                    : `D&D Beyond ID: ${creature.ddbCharacterId}`}
                 use:ddbLinkIcon
                 on:click|stopPropagation
             />
