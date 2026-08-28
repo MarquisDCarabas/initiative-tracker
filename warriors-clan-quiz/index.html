@@ -1,0 +1,1163 @@
+<title>Clanborn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..800&family=Karla:wght@400;500;700&display=swap">
+
+<style>
+  /* ── Tokens ───────────────────────────────────────────────
+     This page commits to one visual world: the forest at night,
+     under a full moon. Every colour is painted explicitly so the
+     page holds on any host ground. */
+  :root {
+    --night:    #0A0F12;
+    --night-2:  #0E161A;
+    --raise:    #131F23;
+    --edge:     rgba(201, 214, 232, 0.15);
+    --edge-lit: rgba(201, 214, 232, 0.34);
+    --moon:     #F3EFE3;
+    --mist:     #A2B2AE;
+    --dim:      #6E817D;
+    --star:     #C9D6E8;
+
+    --thunder:  #E0713C;
+    --shadow:   #8A74D6;
+    --wind:     #D8B84E;
+    --river:    #3EA8C4;
+    --sky:      #6FBF8E;
+
+    --clan: var(--star);
+
+    --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --sans:  "Karla", "Helvetica Neue", Arial, sans-serif;
+
+    --col: 44rem;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--moon);
+    font-family: var(--sans);
+    font-size: clamp(16px, 1rem + 0.15vw, 18px);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Silverpelt — the drifting star field behind everything */
+  #silverpelt {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    display: block;
+  }
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(120, 150, 190, 0.20), transparent 60%),
+      radial-gradient(100% 70% at 50% 110%, rgba(6, 10, 12, 0.95), transparent 65%);
+  }
+
+  .shell {
+    position: relative;
+    z-index: 2;
+    max-width: var(--col);
+    margin: 0 auto;
+    padding: clamp(2rem, 6vh, 4.5rem) clamp(1.15rem, 5vw, 2rem) 4rem;
+  }
+
+  /* ── Shared type ─────────────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(3.1rem, 15vw, 5.6rem);
+    line-height: 0.94;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0.5rem 0 0;
+    color: var(--moon);
+  }
+
+  .lede {
+    font-family: var(--serif);
+    font-size: clamp(1.08rem, 0.98rem + 0.5vw, 1.3rem);
+    line-height: 1.55;
+    color: var(--mist);
+    max-width: 34ch;
+    margin: 0;
+  }
+
+  .rule {
+    height: 1px;
+    background: linear-gradient(90deg, var(--edge-lit), transparent);
+    border: 0;
+    margin: 0;
+  }
+
+  /* ── Buttons ─────────────────────────────────────────────── */
+  .btn {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--night);
+    background: var(--moon);
+    border: 0;
+    border-radius: 2px;
+    padding: 0.95em 1.7em;
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease;
+  }
+  .btn:hover { background: #fff; transform: translateY(-2px); }
+
+  .btn-quiet {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--mist);
+    background: none;
+    border: 1px solid var(--edge);
+    border-radius: 2px;
+    padding: 0.8em 1.3em;
+    cursor: pointer;
+    transition: color 0.18s ease, border-color 0.18s ease;
+  }
+  .btn-quiet:hover { color: var(--moon); border-color: var(--edge-lit); }
+
+  :is(.btn, .btn-quiet, .opt):focus-visible {
+    outline: 2px solid var(--star);
+    outline-offset: 3px;
+  }
+
+  /* ── Intro ───────────────────────────────────────────────── */
+  .intro { display: flex; flex-direction: column; gap: 1.9rem; }
+  .intro-head { display: flex; flex-direction: column; }
+
+  .crest-row {
+    display: flex;
+    gap: clamp(0.9rem, 4vw, 1.9rem);
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .crest-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--dim);
+  }
+  .crest-chip svg { width: 30px; height: 30px; }
+  .crest-chip span {
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  .crest-chip:nth-child(1) { color: var(--thunder); }
+  .crest-chip:nth-child(2) { color: var(--shadow); }
+  .crest-chip:nth-child(3) { color: var(--wind); }
+  .crest-chip:nth-child(4) { color: var(--river); }
+  .crest-chip:nth-child(5) { color: var(--sky); }
+  .crest-chip span { color: var(--dim); }
+
+  .fine {
+    font-size: 0.88rem;
+    color: var(--dim);
+    max-width: 46ch;
+    margin: 0;
+  }
+
+  /* ── Quiz ────────────────────────────────────────────────── */
+  .quiz { display: flex; flex-direction: column; gap: 1.6rem; }
+
+  .tracker {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .ticks { display: flex; gap: 5px; }
+  .tick {
+    width: 20px;
+    height: 3px;
+    background: var(--edge);
+    border-radius: 1px;
+    transition: background-color 0.3s ease;
+  }
+  .tick.done { background: var(--star); }
+  .tick.now  { background: var(--moon); }
+  .count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prompt {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.45rem, 1.15rem + 1.5vw, 2.05rem);
+    line-height: 1.24;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--moon);
+  }
+
+  .prompt:focus { outline: none; }
+
+  .opts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .opt {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    text-align: left;
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: 1.45;
+    color: var(--moon);
+    background: var(--night-2);
+    border: 1px solid var(--edge);
+    border-left: 2px solid transparent;
+    border-radius: 2px;
+    padding: 0.95rem 1.05rem;
+    cursor: pointer;
+    transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  }
+  .opt:hover {
+    background: var(--raise);
+    border-color: var(--edge-lit);
+    border-left-color: var(--star);
+    transform: translateX(3px);
+  }
+  .opt.picked {
+    background: var(--raise);
+    border-left-color: var(--moon);
+  }
+  .opt .key {
+    flex: none;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .quiz-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    min-height: 2.6rem;
+  }
+  .hint { font-size: 0.78rem; color: var(--dim); margin: 0; }
+
+  /* ── Result ──────────────────────────────────────────────── */
+  .result { display: flex; flex-direction: column; gap: 2.3rem; }
+
+  .verdict { display: flex; flex-direction: column; gap: 0.9rem; }
+  .verdict-crest { color: var(--clan); }
+  .verdict-crest svg { width: 62px; height: 62px; }
+  .clan-name {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 1.6rem + 6vw, 4.6rem);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin: 0;
+    color: var(--clan);
+  }
+  .epithet {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.05rem, 1rem + 0.4vw, 1.25rem);
+    color: var(--mist);
+    margin: 0;
+  }
+  .verdict-body {
+    font-size: 1.03rem;
+    line-height: 1.68;
+    color: var(--moon);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .verdict-body + .verdict-body { margin-top: 0.9rem; }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--edge);
+    border: 1px solid var(--edge);
+  }
+  .fact {
+    background: var(--night-2);
+    padding: 1rem 1.05rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .fact dt {
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .fact dd {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: var(--moon);
+  }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 0.9rem;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 0.7rem; }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 6.6rem 1fr 2.6rem;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .bar-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--mist);
+  }
+  .bar-track {
+    height: 6px;
+    background: var(--night-2);
+    border: 1px solid var(--edge);
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 0;
+    background: currentColor;
+    transition: width 0.9s cubic-bezier(0.22, 0.8, 0.3, 1);
+  }
+  .bar-pct {
+    font-size: 0.78rem;
+    color: var(--dim);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .naming {
+    border: 1px solid var(--edge);
+    background: var(--night-2);
+    padding: 1.4rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    align-items: flex-start;
+  }
+  .warrior-name {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(1.8rem, 1.3rem + 2.4vw, 2.7rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--clan);
+    margin: 0;
+  }
+
+  .also {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .also p { margin: 0; font-size: 0.95rem; color: var(--mist); }
+  .also strong { color: var(--moon); font-weight: 700; }
+
+  .end-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+
+  .colophon {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--dim);
+    max-width: 58ch;
+    margin: 0;
+  }
+
+  /* ── Motion ──────────────────────────────────────────────── */
+  .enter { animation: rise 0.42s cubic-bezier(0.22, 0.85, 0.3, 1) both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .reveal > * { animation: rise 0.6s cubic-bezier(0.22, 0.85, 0.3, 1) both; }
+  .reveal > *:nth-child(1) { animation-delay: 0.05s; }
+  .reveal > *:nth-child(2) { animation-delay: 0.30s; }
+  .reveal > *:nth-child(3) { animation-delay: 0.45s; }
+  .reveal > *:nth-child(4) { animation-delay: 0.58s; }
+  .reveal > *:nth-child(5) { animation-delay: 0.68s; }
+  .reveal > *:nth-child(6) { animation-delay: 0.78s; }
+  .reveal > *:nth-child(7) { animation-delay: 0.86s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.001ms !important;
+    }
+    .opt:hover { transform: none; }
+    .btn:hover { transform: none; }
+  }
+
+  @media (min-height: 46rem) {
+    #intro { padding-top: 8vh; }
+  }
+
+  @media (max-width: 30rem) {
+    .bar-row { grid-template-columns: 5.6rem 1fr 2.4rem; }
+    .opt { padding: 0.85rem 0.9rem; }
+    .facts { grid-template-columns: 1fr; }
+  }
+</style>
+
+<canvas id="silverpelt" aria-hidden="true"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+
+<main class="shell">
+
+  <!-- ── The clearing ─────────────────────────────────────── -->
+  <section id="intro" class="intro enter">
+    <div class="intro-head">
+      <p class="eyebrow">Full moon &middot; a truce &middot; a question</p>
+      <h1>Clanborn</h1>
+    </div>
+
+    <hr class="rule">
+
+    <p class="lede">Every cat is born somewhere. Not every cat belongs there.</p>
+
+    <p class="fine">Eight questions, drawn fresh from the elders each time you sit down &mdash; so no two vigils ask quite the same thing. There are no right answers, only true ones. Answer fast, before you have time to be clever about it.</p>
+
+    <div class="crest-row" aria-hidden="true">
+      <div class="crest-chip"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 29V13"/><path d="M16 13c0-6 3-10 8-10 2 0 3 1 3 3 0 5-4 9-11 9z"/><path d="M16 20c-6 0-10-3-10-7 0-2 1-3 3-3 4 0 7 4 7 10z"/></svg><span>Thunder</span></div>
+      <div class="crest-chip"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 29v-4"/><path d="M16 3 9 14h14z"/><path d="M16 12 6 25h20z"/></svg><span>Shadow</span></div>
+      <div class="crest-chip"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h16c3 0 5-1.5 5-3.5S22 2 20.5 3.5"/><path d="M3 16h22c3 0 5-1.5 5-3.5"/><path d="M3 23h14c3 0 5 1.5 5 3.5S20 30 18.5 28.5"/></svg><span>Wind</span></div>
+      <div class="crest-chip"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11c3.5-4 6.5-4 10 0s6.5 4 10 0"/><path d="M2 19c3.5-4 6.5-4 10 0s6.5 4 10 0"/><path d="M2 27c3.5-4 6.5-4 10 0"/></svg><span>River</span></div>
+      <div class="crest-chip"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20c5 0 9-3 11-8 2 5 6 8 11 8"/><path d="M13 12c0-3 1.5-5 3-6 1.5 1 3 3 3 6"/><path d="M16 6V3"/></svg><span>Sky</span></div>
+    </div>
+
+    <div><button class="btn" id="begin">Step into the clearing</button></div>
+  </section>
+
+  <!-- ── The questions ────────────────────────────────────── -->
+  <section id="quiz" class="quiz" hidden>
+    <div class="tracker">
+      <div class="ticks" id="ticks" aria-hidden="true"></div>
+      <p class="count" id="count">Question 1 of 8</p>
+    </div>
+
+    <div id="qwrap">
+      <h2 class="prompt" id="prompt" tabindex="-1"></h2>
+      <ul class="opts" id="opts" style="margin-top:1.3rem"></ul>
+    </div>
+
+    <div class="quiz-foot">
+      <p class="hint">Press <strong>1</strong>&ndash;<strong>5</strong> to answer quickly.</p>
+      <button class="btn-quiet" id="back" hidden>Go back</button>
+    </div>
+  </section>
+
+  <!-- ── The naming ───────────────────────────────────────── -->
+  <section id="result" class="result reveal" hidden></section>
+
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ══ The five Clans ═══════════════════════════════════════
+     Traits drawn from the Warriors series (Erin Hunter) —
+     Secrets of the Clans, Battles of the Clans, and the
+     territories of the forest, the lake and the gorge. */
+
+  const CREST = {
+    TH: '<path d="M16 29V13"/><path d="M16 13c0-6 3-10 8-10 2 0 3 1 3 3 0 5-4 9-11 9z"/><path d="M16 20c-6 0-10-3-10-7 0-2 1-3 3-3 4 0 7 4 7 10z"/>',
+    SH: '<path d="M16 29v-4"/><path d="M16 3 9 14h14z"/><path d="M16 12 6 25h20z"/>',
+    WI: '<path d="M3 9h16c3 0 5-1.5 5-3.5S22 2 20.5 3.5"/><path d="M3 16h22c3 0 5-1.5 5-3.5"/><path d="M3 23h14c3 0 5 1.5 5 3.5S20 30 18.5 28.5"/>',
+    RI: '<path d="M2 11c3.5-4 6.5-4 10 0s6.5 4 10 0"/><path d="M2 19c3.5-4 6.5-4 10 0s6.5 4 10 0"/><path d="M2 27c3.5-4 6.5-4 10 0"/>',
+    SK: '<path d="M2 20c5 0 9-3 11-8 2 5 6 8 11 8"/><path d="M13 12c0-3 1.5-5 3-6 1.5 1 3 3 3 6"/><path d="M16 6V3"/>'
+  };
+
+  const CLANS = {
+    TH: {
+      name: "ThunderClan",
+      hue: "var(--thunder)",
+      epithet: "Fierce and brave — the Clan of heroes, of compassion, of destiny.",
+      body: [
+        "You went in. That is the whole of it, and it is not a small thing. When something was wrong in front of you, you did not weigh it, or file it away for later, or wait to see whether it was your business — you went in, and worked out the cost afterwards. ThunderClan has been called reckless for exactly that, usually by cats it has since fed through a hard leaf-bare.",
+        "Your Clan hunts under thick oak cover in the forest, fights shoulder to shoulder rather than alone, and has a long, stubborn history of defending cats who are not its own — rogues, loners, kittypets, the Clan across the border that raided it last moon. ThunderClan will argue with the warrior code to its leader's face when the code stops serving living cats. Firestar came to it as a kittypet and led it as a legend. That door is the point of ThunderClan, not an exception to it."
+      ],
+      facts: {
+        "Territory": "Dense oak and beech forest, thick undergrowth, a camp in a stone hollow",
+        "Prey": "Mice, voles, squirrels, the occasional bold blackbird",
+        "You hunt by": "Stalking low through cover, and driving prey toward a waiting Clanmate",
+        "At your best": "When somebody needs you and nobody else has moved yet"
+      },
+      also: {
+        "Cats like you": "Firestar, Bluestar, Brambleclaw, Squirrelflight, Sandstorm",
+        "Your closest kin": "SkyClan — the other Clan that keeps letting outsiders in",
+        "Your sharpest edge": "You mistake your own certainty for what is right. Not every cat wants rescuing."
+      },
+      prefixes: ["Oak","Bramble","Ember","Fern","Squirrel","Russet","Thorn","Holly","Bracken","Robin","Amber","Birch","Dapple","Lion"],
+      suffixes: ["heart","pelt","claw","fur","tail","stripe","fang","leaf","step","storm"]
+    },
+    SH: {
+      name: "ShadowClan",
+      hue: "var(--shadow)",
+      epithet: "Proud and independent — the most dangerous warriors in the forest.",
+      body: [
+        "You kept things back. Not out of spite — because you had already thought three steps further than the cat asking, and saying so would have given away ground you might need. ShadowClan cats are called cold by Clans that have never had to survive on a marsh in the dead of leaf-bare with prey that fights back.",
+        "Your Clan lives among black pines and boggy ground, hunts frogs and lizards where other cats find nothing worth eating, and trains in the dark until night stops being a disadvantage and starts being a weapon. ShadowClan is proud, guarded, and fiercely loyal inward — it will absorb loners and rogues nobody else wanted, then defend them like kin. What the others call ambition, ShadowClan calls not being caught out twice."
+      ],
+      facts: {
+        "Territory": "Pine forest and marshland, camp ringed by bramble under dark branches",
+        "Prey": "Frogs, lizards, snakes, rats — food that takes nerve to eat",
+        "You hunt by": "Learning something's habits for days, then taking it in full dark",
+        "At your best": "When it is late, everyone else is tired, and you have already planned for this"
+      },
+      also: {
+        "Cats like you": "Tigerstar, Tawnypelt, Yellowfang, Blackstar, Rowanclaw",
+        "Your closest kin": "WindClan — you both bristle first and explain later",
+        "Your sharpest edge": "Self-reliance curdles into secrecy. Some cats are not testing you."
+      },
+      prefixes: ["Pine","Raven","Cinder","Night","Marsh","Tawny","Ash","Rowan","Smoke","Snake","Crow","Toad","Spike","Dusk"],
+      suffixes: ["claw","shade","fang","pelt","mask","fur","foot","stripe","tooth","whisker"]
+    },
+    WI: {
+      name: "WindClan",
+      hue: "var(--wind)",
+      epithet: "Swift and loyal — the fastest cats under the open sky.",
+      body: [
+        "You did not want to be hemmed in. Not by the walls, not by the waiting, not by a cat standing too close while you were deciding. WindClan cats are built long and lean and restless, and they think best in motion — usually about a length and a half ahead of the cat they are talking to.",
+        "Your Clan lives on open moorland with nowhere to hide, which makes it the most alert Clan and the quickest to take offence: when there is no cover, noticing early is the only defence there is. WindClan runs down hares in the open, digs tunnels through the hills, and sleeps out under the stars whenever the weather allows — which is why it holds, quietly and completely, that it is closer to StarClan than any other Clan. It is honest to a fault, loyal past sense, and gone over the ridge before you have finished the sentence."
+      ],
+      facts: {
+        "Territory": "Open moor, heather and gorse, a shallow camp scooped into a hollow",
+        "Prey": "Rabbits and hares, run down in the open; birds off the moorland grass",
+        "You hunt by": "Pure pursuit — you simply do not stop before it does",
+        "At your best": "Outdoors, moving, with the whole horizon in view at once"
+      },
+      also: {
+        "Cats like you": "Tallstar, Crowfeather, Onestar, Barkface, Feathertail's kin on the moor",
+        "Your closest kin": "ShadowClan — proud, prickly, and quicker to defend than to explain",
+        "Your sharpest edge": "You take things as slights that were never aimed at you."
+      },
+      prefixes: ["Heather","Hare","Gorse","Swift","Kestrel","Wren","Breeze","Dust","Lark","Whin","Pebble","Furze","Larch","Sedge"],
+      suffixes: ["foot","paw","flight","breeze","fur","tail","leap","whisker","step","wing"]
+    },
+    RI: {
+      name: "RiverClan",
+      hue: "var(--river)",
+      epithet: "Strong and clever — sleek, patient, and never hurried into anything.",
+      body: [
+        "You waited. Everyone else read that as calm, or slowness, or not caring much — and you let them, because the wait was the whole plan and explaining it would have spoiled it. RiverClan cats are the ones who arrive last and arrive right.",
+        "Your Clan swims where other cats will not put a paw, catches fish nobody else can reach, and is well-fed in seasons when the forest Clans go thin — which is exactly why it gets called lazy and vain at every Gathering. RiverClan cats groom their sleek, water-shedding fur properly, and line their nests with shells, feathers and smooth bright stones because a den should be worth coming home to. They are slow to start a fight and formidable in one: broad-shouldered, unbothered, and much harder to move than they look."
+      ],
+      facts: {
+        "Territory": "Reed beds and river islands, a camp on cleared ground between two streams",
+        "Prey": "Fish, chiefly — with water voles, shrews and mice when the river is high",
+        "You hunt by": "Standing utterly still over the water until the moment is exactly right",
+        "At your best": "When there is time to do the thing properly"
+      },
+      also: {
+        "Cats like you": "Crookedstar, Leopardstar, Mistystar, Feathertail, Mothwing",
+        "Your closest kin": "SkyClan — you both make a home beautiful rather than merely safe",
+        "Your sharpest edge": "Patience can be a hiding place. Sometimes the moment does not come back."
+      },
+      prefixes: ["Reed","Minnow","Otter","Silver","Mist","Willow","Ripple","Perch","Mallow","Pike","Duskwater","Shimmer","Icewing","Beetle"],
+      suffixes: ["stream","fur","pelt","whisker","tail","splash","shine","heart","wing","frost"]
+    },
+    SK: {
+      name: "SkyClan",
+      hue: "var(--sky)",
+      epithet: "Lost and rebuilt — the Clan that leaps, and the Clan that lets you in.",
+      body: [
+        "You asked the question underneath the question. Where other cats saw a rule, a border, or a stranger to be turned back, you saw something that could be built with — and you were curious before you were cautious.",
+        "SkyClan is the fifth Clan: driven out of the forest when Twolegs took its trees, scattered, forgotten by the other four, and then found and rebuilt from rogues, loners and kittypets generations later. That history made it the least sniffy Clan alive. It invented daylight warriors — cats who train and hunt with the Clan and go home to their Twolegs at dusk, keeping their own names, collars and all. SkyClan cats have powerful hind legs and tough pads for leaping into trees no other cat can reach: when the way forward is blocked, they simply go up."
+      ],
+      facts: {
+        "Territory": "A sandstone gorge, later the pine woods — tall trees with no low branches",
+        "Prey": "Birds and squirrels taken out of the air, mice and rodents on the rocks",
+        "You hunt by": "Leaping — straight up into the branches where prey thinks it is safe",
+        "At your best": "Starting something from very little, with whoever happens to be there"
+      },
+      also: {
+        "Cats like you": "Leafstar, Sharpclaw, Echosong, Billystorm, Firestar (who found them)",
+        "Your closest kin": "ThunderClan — the only other Clan that judges a cat by what they do",
+        "Your sharpest edge": "You give second chances so readily that you sometimes miss a first warning."
+      },
+      prefixes: ["Sparrow","Finch","Nettle","Sage","Cherry","Rock","Bell","Plum","Harry","Sandy","Fallow","Tinder","Bounce","Clover"],
+      suffixes: ["leap","wing","flight","claw","song","heart","pelt","bounce","fur","spring"]
+    }
+  };
+
+  const ORDER = ["TH", "SH", "WI", "RI", "SK"];
+
+  /* ══ The elders' questions ════════════════════════════════
+     Eight are asked: one opener, six from the pool, one closer —
+     shuffled fresh every vigil, the way Pottermore's hat does it.
+     Every answer spreads 100 points across the five Clans. */
+
+  const OPENERS = [
+    { q: "The Gathering is called, and the full moon comes up over the water. Before you cross, StarClan asks what you brought with you.",
+      a: [
+        { t: "A wound I hid, so nobody would fuss.",              w: { TH: 22, SH: 40, WI: 12, RI: 16, SK: 10 } },
+        { t: "News I have been burning to tell somebody.",        w: { TH: 20, SH:  5, WI: 42, RI:  8, SK: 25 } },
+        { t: "A question nobody else thought to ask.",            w: { TH: 14, SH: 16, WI: 10, RI: 25, SK: 35 } },
+        { t: "Nothing. Just myself, washed and ready.",           w: { TH: 18, SH: 15, WI: 10, RI: 45, SK: 12 } }
+      ] },
+    { q: "You wake before the rest of your Clan. What pulled you out of the den?",
+      a: [
+        { t: "A kit crying somewhere in the camp.",               w: { TH: 46, SH: 12, WI: 12, RI: 18, SK: 12 } },
+        { t: "The wind had changed in the night.",                w: { TH: 14, SH: 14, WI: 46, RI: 14, SK: 12 } },
+        { t: "Something at the border smelled wrong.",            w: { TH: 18, SH: 46, WI: 20, RI:  8, SK:  8 } },
+        { t: "The light coming off the water.",                   w: { TH: 10, SH:  8, WI: 12, RI: 48, SK: 22 } },
+        { t: "A branch I have never climbed, creaking.",          w: { TH: 14, SH: 10, WI: 12, RI: 10, SK: 54 } }
+      ] },
+    { q: "Dawn, or dusk?",
+      a: [
+        { t: "Dawn — the moor going gold, and the whole day still unspent.",  w: { TH: 28, SH:  6, WI: 38, RI:  8, SK: 20 } },
+        { t: "Dusk — everything softening, and the good hunting about to start.", w: { TH: 12, SH: 42, WI:  6, RI: 30, SK: 10 } }
+      ] }
+  ];
+
+  const POOL = [
+    { q: "A storm has torn through the territory. Four things are lying in the wreckage. Which do you carry back to camp?",
+      a: [
+        { t: "A sprig of the herb the medicine cat is always short of.", w: { TH: 44, SH: 14, WI: 12, RI: 18, SK: 12 } },
+        { t: "A tooth from something much bigger than a cat.",           w: { TH: 14, SH: 48, WI: 14, RI: 12, SK: 12 } },
+        { t: "A feather with a strange blue shine to it.",               w: { TH: 10, SH: 12, WI: 16, RI: 46, SK: 16 } },
+        { t: "A length of Twoleg twine — that could hold a den together.", w: { TH: 12, SH: 14, WI:  8, RI: 16, SK: 50 } },
+        { t: "Nothing. I run back first to say the elders' den is down.",  w: { TH: 22, SH: 10, WI: 50, RI: 10, SK:  8 } }
+      ] },
+    { q: "Which of these would you most hate another cat to call you?",
+      a: [
+        { t: "Soft.",      w: { TH:  8, SH: 46, WI: 22, RI: 12, SK: 12 } },
+        { t: "Sly.",       w: { TH: 44, SH:  6, WI: 24, RI: 12, SK: 14 } },
+        { t: "Slow.",      w: { TH: 14, SH: 14, WI: 46, RI:  8, SK: 18 } },
+        { t: "Vain.",      w: { TH: 16, SH: 14, WI: 12, RI: 44, SK: 14 } },
+        { t: "Ordinary.",  w: { TH: 14, SH: 16, WI: 12, RI: 12, SK: 46 } }
+      ] },
+    { q: "A cat from another Clan is caught on your land — thin, shaking, and with no smell of hunting on them.",
+      a: [
+        { t: "Feed them first. Explain myself to my leader afterwards.",  w: { TH: 46, SH:  6, WI: 12, RI: 10, SK: 26 } },
+        { t: "Walk them to the border. The rules are what keep everyone alive.", w: { TH: 10, SH: 40, WI: 26, RI: 18, SK:  6 } },
+        { t: "Ask what they are running from before I decide anything.",  w: { TH: 16, SH: 16, WI:  8, RI: 22, SK: 38 } },
+        { t: "Fetch somebody senior. It is not my call to make.",         w: { TH: 14, SH: 16, WI: 30, RI: 34, SK:  6 } }
+      ] },
+    { q: "Which sound would you rather fall asleep to?",
+      a: [
+        { t: "The whole camp breathing around me.",           w: { TH: 48, SH: 14, WI: 14, RI: 14, SK: 10 } },
+        { t: "Pine needles shifting, and nothing else.",       w: { TH: 10, SH: 50, WI: 12, RI: 16, SK: 12 } },
+        { t: "Wind moving through the heather.",               w: { TH: 12, SH: 12, WI: 50, RI: 14, SK: 12 } },
+        { t: "Rain landing on the river.",                     w: { TH: 12, SH: 14, WI: 12, RI: 50, SK: 12 } },
+        { t: "Leaves turning over, a long way above me.",      w: { TH: 14, SH: 12, WI: 14, RI: 10, SK: 50 } }
+      ] },
+    { q: "Your leader makes a decision you are certain is wrong.",
+      a: [
+        { t: "Say so. In front of everyone, if that is what it takes.",   w: { TH: 44, SH: 14, WI: 24, RI:  6, SK: 12 } },
+        { t: "Say so quietly, once, to them alone.",                      w: { TH: 20, SH: 16, WI:  8, RI: 34, SK: 22 } },
+        { t: "Say nothing, and quietly do the right thing anyway.",       w: { TH: 16, SH: 42, WI:  6, RI: 14, SK: 22 } },
+        { t: "Trust them. They have seen more seasons than I have.",      w: { TH: 18, SH: 14, WI: 36, RI: 26, SK:  6 } }
+      ] },
+    { q: "There is one way you like to hunt, and you would rather do it than any other.",
+      a: [
+        { t: "Run it down. It is only a matter of time.",                 w: { TH: 12, SH: 12, WI: 52, RI: 10, SK: 14 } },
+        { t: "Wait. Longer than anything expects a cat to wait.",         w: { TH: 12, SH: 18, WI:  6, RI: 52, SK: 12 } },
+        { t: "Go up, and come down on it.",                              w: { TH: 12, SH: 12, WI: 12, RI:  8, SK: 56 } },
+        { t: "Learn its path for days, then take it in the dark.",        w: { TH: 10, SH: 54, WI: 10, RI: 16, SK: 10 } },
+        { t: "Work it with a partner and drive it onto their claws.",     w: { TH: 50, SH: 16, WI: 14, RI: 10, SK: 10 } }
+      ] },
+    { q: "Which is worse?",
+      a: [
+        { t: "Being lied to.",   w: { TH: 40, SH: 12, WI: 32, RI:  8, SK:  8 } },
+        { t: "Being pitied.",    w: { TH:  8, SH: 48, WI: 22, RI: 12, SK: 10 } },
+        { t: "Being crowded.",   w: { TH: 12, SH: 16, WI: 48, RI: 14, SK: 10 } },
+        { t: "Being rushed.",    w: { TH: 10, SH: 16, WI:  8, RI: 52, SK: 14 } },
+        { t: "Being left out.",  w: { TH: 22, SH:  8, WI: 10, RI: 10, SK: 50 } }
+      ] },
+    { q: "There is a stranger watching the camp from the trees, and you are the only one awake.",
+      a: [
+        { t: "Call out. Let them know they have been seen.",     w: { TH: 42, SH:  8, WI: 34, RI:  8, SK:  8 } },
+        { t: "Watch them watching us, and learn more than they do.", w: { TH:  8, SH: 52, WI: 10, RI: 20, SK: 10 } },
+        { t: "Wake somebody. Quietly.",                          w: { TH: 24, SH: 16, WI: 16, RI: 36, SK:  8 } },
+        { t: "Circle round behind, and get above them.",          w: { TH: 16, SH: 18, WI: 12, RI:  8, SK: 46 } }
+      ] },
+    { q: "You are allowed to keep one thing that is no use to anybody, forever.",
+      a: [
+        { t: "A tuft of fur from a Clanmate I lost.",                     w: { TH: 48, SH: 16, WI: 12, RI: 16, SK:  8 } },
+        { t: "A claw from the first fight I ever won.",                   w: { TH: 16, SH: 48, WI: 14, RI: 10, SK: 12 } },
+        { t: "A smooth blue stone off the riverbed.",                     w: { TH: 10, SH: 10, WI: 10, RI: 54, SK: 16 } },
+        { t: "Bark from the highest branch I have ever reached.",         w: { TH: 12, SH: 10, WI: 16, RI: 10, SK: 52 } },
+        { t: "Nothing. I would rather carry nothing at all.",             w: { TH: 16, SH: 16, WI: 52, RI:  8, SK:  8 } }
+      ] },
+    { q: "Deep snow, and the prey has gone. There are two elders, one nursing queen, and one rabbit.",
+      a: [
+        { t: "The queen eats. The Clan's kits come before all of us.",    w: { TH: 38, SH: 20, WI: 12, RI: 24, SK:  6 } },
+        { t: "The elders eat. They gave us everything they had.",         w: { TH: 40, SH: 10, WI: 14, RI: 26, SK: 10 } },
+        { t: "Split it thin. Everybody gets a mouthful of something.",    w: { TH: 20, SH:  6, WI: 10, RI: 16, SK: 48 } },
+        { t: "Nobody eats yet. I am going back out.",                     w: { TH: 20, SH: 28, WI: 40, RI:  6, SK:  6 } }
+      ] },
+    { q: "If you had to be something in the territory other than a cat, what would you be?",
+      a: [
+        { t: "The oldest oak in the forest.",              w: { TH: 50, SH: 14, WI:  8, RI: 18, SK: 10 } },
+        { t: "The dark underneath the pines.",             w: { TH:  8, SH: 56, WI: 10, RI: 16, SK: 10 } },
+        { t: "The wind coming over the ridge.",            w: { TH: 10, SH: 10, WI: 56, RI:  8, SK: 16 } },
+        { t: "The river, all the way down.",               w: { TH: 10, SH: 12, WI:  8, RI: 56, SK: 14 } },
+        { t: "The gap between two branches.",              w: { TH: 10, SH: 12, WI: 14, RI:  8, SK: 56 } }
+      ] },
+    { q: "Your apprentice has failed the same move five times running.",
+      a: [
+        { t: "Show them again. And again, until it lands.",                w: { TH: 50, SH: 14, WI: 12, RI: 14, SK: 10 } },
+        { t: "Change the move. Their body is not built for that one.",     w: { TH: 12, SH: 10, WI: 12, RI: 18, SK: 48 } },
+        { t: "Keep them at it until dark. Nothing was ever easy.",         w: { TH: 14, SH: 50, WI: 20, RI:  8, SK:  8 } },
+        { t: "Stop. We come back tomorrow, when they are not angry.",      w: { TH: 14, SH: 10, WI:  8, RI: 52, SK: 16 } },
+        { t: "Race them to the top of the hill first, then try it again.", w: { TH: 14, SH:  8, WI: 52, RI:  8, SK: 18 } }
+      ] },
+    { q: "What do the other Clans get wrong about you?",
+      a: [
+        { t: "They think I am soft. I am just not cruel.",          w: { TH: 50, SH:  8, WI: 12, RI: 16, SK: 14 } },
+        { t: "They think I am cold. I am just careful.",            w: { TH:  8, SH: 54, WI: 12, RI: 16, SK: 10 } },
+        { t: "They think I am jumpy. I just notice more.",          w: { TH: 10, SH: 16, WI: 52, RI: 12, SK: 10 } },
+        { t: "They think I am lazy. I am choosing my moment.",      w: { TH:  8, SH: 16, WI:  8, RI: 56, SK: 12 } },
+        { t: "They think I am strange. I am just not from here.",   w: { TH: 12, SH: 12, WI: 10, RI: 10, SK: 56 } }
+      ] },
+    { q: "A line of the warrior code does not fit the thing standing in front of you.",
+      a: [
+        { t: "The code serves cats. Not the other way round.",             w: { TH: 42, SH:  8, WI:  8, RI: 12, SK: 30 } },
+        { t: "The code exists because somebody already made my mistake.",  w: { TH: 14, SH: 30, WI: 40, RI: 12, SK:  4 } },
+        { t: "I would bend it, and say afterwards that I had.",            w: { TH: 20, SH: 14, WI: 10, RI: 22, SK: 34 } },
+        { t: "I would keep to it, and hate every step.",                   w: { TH: 20, SH: 20, WI: 20, RI: 36, SK:  4 } }
+      ] },
+    { q: "Something is following you through the territory, and you cannot outrun it.",
+      a: [
+        { t: "Turn round and meet it.",                          w: { TH: 44, SH: 30, WI: 10, RI: 10, SK:  6 } },
+        { t: "Take to the water, where it cannot follow.",        w: { TH:  8, SH: 14, WI:  8, RI: 56, SK: 14 } },
+        { t: "Go up, where it cannot follow.",                    w: { TH: 12, SH: 12, WI: 10, RI: 10, SK: 56 } },
+        { t: "It has not met me yet. Nothing outruns me.",        w: { TH: 12, SH: 14, WI: 56, RI:  8, SK: 10 } }
+      ] },
+    { q: "Which do you trust most, when it comes down to it?",
+      a: [
+        { t: "My Clanmates.",   w: { TH: 52, SH: 10, WI: 16, RI: 12, SK: 10 } },
+        { t: "My nose.",        w: { TH: 10, SH: 52, WI: 20, RI: 10, SK:  8 } },
+        { t: "My legs.",        w: { TH: 12, SH: 12, WI: 54, RI:  8, SK: 14 } },
+        { t: "My patience.",    w: { TH: 12, SH: 16, WI:  6, RI: 54, SK: 12 } },
+        { t: "My next idea.",   w: { TH: 10, SH: 14, WI: 12, RI: 10, SK: 54 } }
+      ] },
+    { q: "The last of the light is going. Where would you rather be standing?",
+      a: [
+        { t: "In the middle of camp, in all the noise.",                       w: { TH: 50, SH:  8, WI: 12, RI: 20, SK: 10 } },
+        { t: "Under thick cover, where nothing can see me.",                   w: { TH:  8, SH: 54, WI: 10, RI: 18, SK: 10 } },
+        { t: "At the top of the moor, seeing every direction at once.",        w: { TH: 12, SH: 14, WI: 54, RI:  8, SK: 12 } },
+        { t: "On a rock still warm from the sun, above the water.",            w: { TH: 10, SH: 12, WI:  8, RI: 56, SK: 14 } },
+        { t: "Somewhere I have never been before.",                            w: { TH: 12, SH: 10, WI: 18, RI:  8, SK: 52 } }
+      ] },
+    { q: "A Clanmate has done something badly wrong, and you are the only cat who knows.",
+      a: [
+        { t: "Tell them I know, and let them speak first.",       w: { TH: 40, SH: 12, WI: 14, RI: 12, SK: 22 } },
+        { t: "Tell the leader. It is not mine to hold on to.",    w: { TH: 20, SH: 14, WI: 42, RI: 20, SK:  4 } },
+        { t: "Keep it, and watch them.",                          w: { TH:  6, SH: 54, WI:  8, RI: 22, SK: 10 } },
+        { t: "Find out why, before I do anything at all.",        w: { TH: 16, SH: 14, WI:  6, RI: 30, SK: 34 } }
+      ] },
+    { q: "How do you take an insult across the Gathering clearing?",
+      a: [
+        { t: "Answer it, loudly, on the spot.",                      w: { TH: 30, SH: 14, WI: 44, RI:  6, SK:  6 } },
+        { t: "Let it sit. I will remember who said it.",              w: { TH: 10, SH: 50, WI: 14, RI: 20, SK:  6 } },
+        { t: "Look straight through them as if they had not spoken.", w: { TH: 12, SH: 18, WI:  8, RI: 52, SK: 10 } },
+        { t: "Laugh, and go and talk to them afterwards.",            w: { TH: 20, SH:  6, WI: 10, RI: 10, SK: 54 } }
+      ] },
+    { q: "You are given one moon to be excellent at exactly one thing. Choose.",
+      a: [
+        { t: "Holding a line on my own for as long as it takes.",   w: { TH: 50, SH: 20, WI: 12, RI: 12, SK:  6 } },
+        { t: "Moving through a territory without leaving a trace.", w: { TH:  8, SH: 52, WI: 12, RI: 18, SK: 10 } },
+        { t: "Running further than any cat has run in a day.",      w: { TH: 10, SH: 10, WI: 56, RI:  8, SK: 16 } },
+        { t: "Making something with my paws that outlasts me.",     w: { TH: 12, SH: 10, WI:  6, RI: 52, SK: 20 } },
+        { t: "Talking cats who hate each other into one camp.",     w: { TH: 20, SH:  8, WI:  8, RI: 12, SK: 52 } }
+      ] }
+  ];
+
+  const CLOSERS = [
+    { q: "One day a cat who never met you will say one thing about you. What should it be?",
+      a: [
+        { t: "They never left anybody behind.",             w: { TH: 50, SH: 12, WI: 14, RI: 14, SK: 10 } },
+        { t: "They saw it coming before anyone else did.",  w: { TH: 10, SH: 52, WI: 16, RI: 14, SK:  8 } },
+        { t: "They were the fastest thing on the moor.",    w: { TH: 12, SH: 12, WI: 54, RI:  8, SK: 14 } },
+        { t: "They made things beautiful, and they lasted.",w: { TH: 10, SH: 10, WI:  8, RI: 56, SK: 16 } },
+        { t: "They started something.",                     w: { TH: 14, SH: 12, WI: 12, RI: 10, SK: 52 } }
+      ] },
+    { q: "StarClan has gone silent. No signs, no dreams, nothing for a whole moon.",
+      a: [
+        { t: "Keep the vigil anyway. They will speak when they speak.",   w: { TH: 34, SH: 10, WI: 18, RI: 34, SK:  4 } },
+        { t: "Walk until they answer me.",                                w: { TH: 14, SH: 10, WI: 52, RI:  8, SK: 16 } },
+        { t: "Make the decision myself. Somebody has to.",                w: { TH: 22, SH: 48, WI:  8, RI: 12, SK: 10 } },
+        { t: "Ask them a different question.",                            w: { TH: 10, SH: 14, WI:  8, RI: 18, SK: 50 } }
+      ] },
+    { q: "You are allowed one journey, and you will not come back the same cat.",
+      a: [
+        { t: "Nowhere. Everything I love is already here.",                w: { TH: 50, SH: 16, WI: 10, RI: 20, SK:  4 } },
+        { t: "Into the tunnels running under the moor.",                   w: { TH: 14, SH: 32, WI: 42, RI:  8, SK:  4 } },
+        { t: "Downriver, past where anybody has ever fished.",             w: { TH: 10, SH: 10, WI: 12, RI: 52, SK: 16 } },
+        { t: "Into the Twolegplace, to find the cats we left behind.",     w: { TH: 16, SH:  6, WI:  6, RI:  8, SK: 64 } },
+        { t: "Wherever the trouble is worst.",                             w: { TH: 34, SH: 42, WI: 14, RI:  6, SK:  4 } }
+      ] }
+  ];
+
+  /* ══ Silverpelt ═══════════════════════════════════════════
+     The warriors' night sky: a scattered field with the dense
+     band of StarClan drawn diagonally across it. */
+  const canvas = document.getElementById("silverpelt");
+  const ctx = canvas.getContext("2d");
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let stars = [];
+  let raf = null;
+
+  function seedSky() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const count = Math.round((w * h) / 5200);
+    stars = [];
+    for (let i = 0; i < count; i++) {
+      const inBand = Math.random() < 0.42;
+      let x = Math.random() * w;
+      let y;
+      if (inBand) {
+        // Silverpelt: a soft band running from upper-left to lower-right
+        const spine = h * 0.16 + (x / w) * h * 0.6;
+        y = spine + (Math.random() + Math.random() + Math.random() - 1.5) * h * 0.13;
+      } else {
+        y = Math.random() * h;
+      }
+      stars.push({
+        x, y,
+        r: inBand ? Math.random() * 0.85 + 0.25 : Math.random() * 1.15 + 0.3,
+        base: inBand ? Math.random() * 0.35 + 0.18 : Math.random() * 0.5 + 0.2,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.0007 + 0.0002,
+        drift: (Math.random() * 0.012 + 0.003) * (inBand ? 1 : 0.5)
+      });
+    }
+  }
+
+  function paintSky(t) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    ctx.clearRect(0, 0, w, h);
+    for (const s of stars) {
+      const a = still ? s.base : s.base * (0.62 + 0.38 * Math.sin(t * s.speed + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(201, 214, 232, " + a.toFixed(3) + ")";
+      ctx.fill();
+      if (!still) {
+        s.x -= s.drift;
+        if (s.x < -2) s.x = w + 2;
+      }
+    }
+    if (!still) raf = requestAnimationFrame(paintSky);
+  }
+
+  function startSky() {
+    if (raf) cancelAnimationFrame(raf);
+    seedSky();
+    if (still) paintSky(0); else raf = requestAnimationFrame(paintSky);
+  }
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(startSky, 180);
+  });
+  startSky();
+
+  /* ══ Quiz engine ══════════════════════════════════════════ */
+  const $ = (id) => document.getElementById(id);
+  const introEl  = $("intro");
+  const quizEl   = $("quiz");
+  const resultEl = $("result");
+  const promptEl = $("prompt");
+  const optsEl   = $("opts");
+  const ticksEl  = $("ticks");
+  const countEl  = $("count");
+  const backEl   = $("back");
+
+  const LENGTH = 8;
+  let sheet = [];
+  let picks = [];
+  let at = 0;
+
+  const shuffle = (arr) => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const oneOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  function dealQuestions() {
+    return [oneOf(OPENERS), ...shuffle(POOL).slice(0, LENGTH - 2), oneOf(CLOSERS)];
+  }
+
+  function drawTicks() {
+    ticksEl.replaceChildren();
+    for (let i = 0; i < LENGTH; i++) {
+      const t = document.createElement("i");
+      t.className = "tick" + (i < at ? " done" : i === at ? " now" : "");
+      ticksEl.append(t);
+    }
+    countEl.textContent = "Question " + (at + 1) + " of " + LENGTH;
+  }
+
+  function showQuestion() {
+    const item = sheet[at];
+    drawTicks();
+    promptEl.textContent = item.q;
+    optsEl.replaceChildren();
+
+    item.a.forEach((ans, i) => {
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt" + (picks[at] === i ? " picked" : "");
+      b.innerHTML = '<span class="key" aria-hidden="true">' + (i + 1) + "</span>";
+      b.append(document.createTextNode(ans.t));
+      b.addEventListener("click", () => answer(i));
+      li.append(b);
+      optsEl.append(li);
+    });
+
+    backEl.hidden = at === 0;
+    const wrap = $("qwrap");
+    wrap.classList.remove("enter");
+    void wrap.offsetWidth;
+    wrap.classList.add("enter");
+    promptEl.focus({ preventScroll: true });
+  }
+
+  function answer(i) {
+    picks[at] = i;
+    if (at < LENGTH - 1) {
+      at++;
+      showQuestion();
+    } else {
+      finish();
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (quizEl.hidden) return;
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= sheet[at].a.length) {
+      e.preventDefault();
+      answer(n - 1);
+    }
+  });
+
+  backEl.addEventListener("click", () => {
+    if (at > 0) { at--; showQuestion(); }
+  });
+
+  /* ══ Scoring ══════════════════════════════════════════════ */
+  function tally() {
+    const total = { TH: 0, SH: 0, WI: 0, RI: 0, SK: 0 };
+    const best  = { TH: 0, SH: 0, WI: 0, RI: 0, SK: 0 };
+    sheet.forEach((item, i) => {
+      const w = item.a[picks[i]].w;
+      for (const k of ORDER) {
+        total[k] += w[k] || 0;
+        if ((w[k] || 0) > best[k]) best[k] = w[k] || 0;
+      }
+    });
+
+    const sum = ORDER.reduce((s, k) => s + total[k], 0);
+    // Largest-remainder rounding so the shares always read as 100%.
+    const raw = ORDER.map((k) => ({ k, exact: (total[k] / sum) * 100 }));
+    const pct = {};
+    let used = 0;
+    raw.forEach((r) => { pct[r.k] = Math.floor(r.exact); used += pct[r.k]; });
+    raw.slice()
+       .sort((a, b) => (b.exact % 1) - (a.exact % 1))
+       .slice(0, 100 - used)
+       .forEach((r) => { pct[r.k] += 1; });
+
+    // A tie goes to whichever Clan a single answer called to most strongly.
+    const ranked = ORDER.slice().sort((a, b) =>
+      total[b] - total[a] || best[b] - best[a] || (Math.random() - 0.5)
+    );
+    return { winner: ranked[0], ranked, pct };
+  }
+
+  function warriorName(key) {
+    const clan = CLANS[key];
+    for (let tries = 0; tries < 12; tries++) {
+      const p = oneOf(clan.prefixes);
+      const s = oneOf(clan.suffixes);
+      if (!p.toLowerCase().includes(s.slice(0, 4))) return p + s;
+    }
+    return clan.prefixes[0] + clan.suffixes[0];
+  }
+
+  /* ══ The naming ═══════════════════════════════════════════ */
+  function finish() {
+    const { winner, ranked, pct } = tally();
+    const clan = CLANS[winner];
+
+    resultEl.style.setProperty("--clan", clan.hue);
+    resultEl.replaceChildren();
+
+    const h = (tag, cls, html) => {
+      const el = document.createElement(tag);
+      if (cls) el.className = cls;
+      if (html != null) el.innerHTML = html;
+      return el;
+    };
+
+    // 1 — the verdict
+    const verdict = h("div", "verdict");
+    verdict.append(
+      h("div", "verdict-crest", '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CREST[winner] + "</svg>"),
+      h("p", "eyebrow", "StarClan has looked at you and seen"),
+      h("h2", "clan-name", clan.name),
+      h("p", "epithet", clan.epithet)
+    );
+    verdict.querySelector(".clan-name").tabIndex = -1;
+    resultEl.append(verdict);
+
+    // 2 — why
+    const prose = h("div", null, clan.body.map((p) => '<p class="verdict-body">' + p + "</p>").join(""));
+    resultEl.append(prose);
+
+    // 3 — the plain facts
+    const facts = h("dl", "facts");
+    for (const [k, v] of Object.entries(clan.facts)) {
+      const cell = h("div", "fact");
+      cell.append(h("dt", null, k), h("dd", null, v));
+      facts.append(cell);
+    }
+    resultEl.append(facts);
+
+    // 4 — how loudly each Clan called
+    const bars = h("section");
+    bars.append(h("p", "section-label", "How loudly each Clan called to you"));
+    const list = h("div", "bars");
+    ranked.forEach((k) => {
+      const row = h("div", "bar-row");
+      row.style.color = CLANS[k].hue;
+      const track = h("div", "bar-track");
+      const fill = h("div", "bar-fill");
+      track.append(fill);
+      row.append(h("span", "bar-name", CLANS[k].name.replace("Clan", "")), track, h("span", "bar-pct", pct[k] + "%"));
+      list.append(row);
+      requestAnimationFrame(() => {
+        setTimeout(() => { fill.style.width = pct[k] + "%"; }, 700);
+      });
+    });
+    bars.append(list);
+    resultEl.append(bars);
+
+    // 5 — your name
+    const naming = h("div", "naming");
+    naming.append(h("p", "section-label", "Your leader gives you your warrior name"));
+    const nameEl = h("p", "warrior-name", warriorName(winner));
+    const again = h("button", "btn-quiet", "Name me again");
+    again.type = "button";
+    again.addEventListener("click", () => { nameEl.textContent = warriorName(winner); });
+    naming.append(nameEl, again);
+    resultEl.append(naming);
+
+    // 6 — the rest of it
+    const also = h("div", "also");
+    for (const [k, v] of Object.entries(clan.also)) {
+      also.append(h("p", null, "<strong>" + k + ":</strong> " + v));
+    }
+    resultEl.append(also);
+
+    // 7 — begin again
+    const foot = h("div");
+    const actions = h("div", "end-actions");
+    const retake = h("button", "btn", "Sit the vigil again");
+    retake.type = "button";
+    retake.addEventListener("click", start);
+    actions.append(retake);
+    foot.append(
+      actions,
+      h("p", "colophon", "Eight questions out of twenty-six, dealt in a different order every time &mdash; so a second vigil is a genuinely different one. Clan lore drawn from the <em>Warriors</em> series by Erin Hunter. Unofficial, made by a fan, for fans.")
+    );
+    foot.querySelector(".colophon").style.marginTop = "1.6rem";
+    resultEl.append(foot);
+
+    quizEl.hidden = true;
+    introEl.hidden = true;
+    resultEl.hidden = false;
+    window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
+    resultEl.querySelector(".clan-name").focus({ preventScroll: true });
+  }
+
+  /* ══ Go ═══════════════════════════════════════════════════ */
+  function start() {
+    sheet = dealQuestions();
+    picks = new Array(LENGTH).fill(null);
+    at = 0;
+    introEl.hidden = true;
+    resultEl.hidden = true;
+    quizEl.hidden = false;
+    showQuestion();
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  $("begin").addEventListener("click", start);
+})();
+</script>
