@@ -10,10 +10,11 @@ back to system faces if it is unavailable.
 
 ## How it works
 
-* **26 questions in the bank.** Each sitting asks **8**: one from three
-  openers, six drawn at random from a pool of twenty, and one from three
-  closers — so a second attempt is a genuinely different quiz. This mirrors
-  how the Pottermore quiz deals its questions.
+* **52 questions in the bank.** Each sitting asks **8**: one from six
+  openers, six drawn at random from a pool of forty, and one from six
+  closers. This mirrors how the Pottermore quiz deals its questions. Two
+  sittings in a row share only **1.24 of 8 questions** on average, and a
+  quarter of the time they share none at all.
 * **Weighted scoring.** Every answer spreads exactly 100 points across the
   five Clans, so no answer is a throwaway and none maps one-to-one onto a
   Clan. Questions are indirect by design — imagery, preferences and
@@ -36,10 +37,18 @@ Drawn from the series and its field guides (*Secrets of the Clans*,
 | RiverClan | River and reed beds | Calm, patient, clever, well-fed, fond of beautiful things |
 | SkyClan | Sandstone gorge, tall trees | Adaptable, welcoming, rebuilt from outsiders, leaps |
 
+## Reading level
+
+Written for a ten-year-old. The questions and answers measure at
+Flesch-Kincaid grade **1.8**, and the longer result write-ups at grade
+**5.8** (mean sentence: 12 words). Series vocabulary that a Warriors reader
+already knows is kept — leaf-bare, kittypet, Twoleg, queen, apprentice,
+fresh-kill pile — since that is flavour, not difficulty.
+
 ## Balance
 
 The weights are tuned so the quiz is neither biased nor unresponsive. Under
-uniformly random answering the five Clans come out at 18.5–21.3% (even would
+uniformly random answering the five Clans come out at 18.7–21.5% (even would
 be 20%), while a reader who answers consistently in one Clan's direction
 lands in that Clan 100% of the time.
 
